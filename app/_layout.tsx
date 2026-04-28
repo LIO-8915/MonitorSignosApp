@@ -63,61 +63,70 @@
 //   errorDescription: { textAlign: 'center', marginBottom: 20, color: '#666' }
 // });
 
+import { Ionicons } from '@expo/vector-icons';
 import { Drawer } from 'expo-router/drawer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-/**
- * Layout Raíz (app/_layout.tsx)
- * Este archivo configura el menú lateral (Drawer) como navegación principal.
- */
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Drawer screenOptions={{ headerTitleAlign: 'center', drawerActiveTintColor: '#007AFF' }}>
-        
-        {/* Pantalla: Pacientes */}
+      <Drawer
+        screenOptions={{
+          headerShown: true, // Esto asegura que la barra superior aparezca
+          headerTitleAlign: 'center',
+          drawerActiveTintColor: '#1976d2',
+        }}
+      >
+        {/* Pantalla de Pacientes */}
         <Drawer.Screen 
-          name="pacientes" 
+          name="Pacientes" 
           options={{ 
-            drawerLabel: 'Gestión de Pacientes', 
-            title: 'Pacientes' 
+            drawerLabel: 'Lista de Pacientes',
+            title: 'Pacientes',
+            drawerIcon: ({color}) => <Ionicons name="people" size={20} color={color} />
           }} 
         />
 
-        {/* Pantalla: PruebasMenu */}
+        {/* Pantalla de Menú de Pruebas */}
         <Drawer.Screen 
-          name="pruebas-menu" 
+          name="PruebasMenu" 
           options={{ 
-            drawerLabel: 'Menú de Pruebas', 
-            title: 'Evaluaciones' 
+            drawerLabel: 'Menú de Pruebas',
+            title: 'Evaluaciones Geriátricas',
+            drawerIcon: ({color}) => <Ionicons name="clipboard" size={20} color={color} />
           }} 
         />
 
-        {/* Pantalla: ControlCita */}
+        {/* Agrega aquí las demás pantallas principales como ControlCita */}
         <Drawer.Screen 
-          name="control-cita" 
+          name="ControlCita" 
           options={{ 
-            drawerLabel: 'Control de Citas', 
-            title: 'Agenda' 
+            drawerLabel: 'Agenda',
+            title: 'Control de Citas',
+            drawerIcon: ({color}) => <Ionicons name="calendar" size={20} color={color} />
           }} 
         />
 
-        {/* Pantalla: RegistroPersonalMedico */}
+        {/* Agrega aquí las pantallas que no se veran */}
         <Drawer.Screen 
-          name="registro-personal" 
+          name="modal" 
           options={{ 
-            drawerLabel: 'Personal Médico', 
-            title: 'Staff' 
+            drawerItemStyle: { display: 'none' } // Esto lo oculta del menú completamente
           }} 
         />
 
-        {/* Pantalla oculta del menú: Registro de Pacientes */}
-        <Drawer.Screen
-          name="registro-pacientes"
-          options={{
-            drawerItemStyle: { display: 'none' }, // No aparece en la lista del menú lateral
-            title: 'Registro de Nuevo Paciente',
-          }}
+        <Drawer.Screen 
+          name="index" 
+          options={{ 
+            drawerItemStyle: { display: 'none' } // Esto lo oculta del menú completamente
+          }} 
+        />
+
+        <Drawer.Screen 
+          name="Graph" 
+          options={{ 
+            drawerItemStyle: { display: 'none' } // Esto lo oculta del menú completamente
+          }} 
         />
 
       </Drawer>
