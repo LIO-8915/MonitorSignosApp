@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  TouchableOpacity,
-  Platform,
-  Button,
-  Alert,
-} from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Accelerometer } from "expo-sensors";
+import { useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  Button,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const Checkbox = ({ label, selected, onPress }) => (
   <TouchableOpacity

@@ -3,7 +3,7 @@ import { equalTo, onValue, orderByChild, query, ref, update } from 'firebase/dat
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { db } from '../../services/firebase';
+import { db } from '../services/firebase';
 
 const CitasPendientes = () => {
   const [citas, setCitas] = useState<any[]>([]);

@@ -4,8 +4,8 @@ import { equalTo, onValue, orderByChild, query, ref } from 'firebase/database';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getAllPacientes, Paciente } from '../../services/database';
-import { db } from '../../services/firebase';
+import { getAllPacientes, Paciente } from '../services/database';
+import { db } from '../services/firebase';
 
 export default function CitaHistorial() {
   const [loading, setLoading] = useState(false);

@@ -12,7 +12,7 @@ import {
 import { BarChart, LineChart } from 'react-native-gifted-charts';
 // Importamos getSignosByPaciente que es el método correcto en tu database.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getSignosByPaciente, SignosVitales } from '../../services/database';
+import { getSignosByPaciente, SignosVitales } from '../services/database';
 
 const screenWidth = Dimensions.get('window').width;
 

@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { Accelerometer } from 'expo-sensors';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Button, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import SwitchPrueba from '../../components/ui/SwitchPrueba';
+import SwitchPrueba from '../components/ui/SwitchPrueba';
 
 export default function Formulario() {
     const router = useRouter();
@@ -48,7 +48,7 @@ export default function Formulario() {
         return () => accelSub.remove();
     }, []);
 
-    const actualizaBurbuja = ({ x, y }) => {
+    const actualizaBurbuja = ({ x, y }: { x: number, y: number }) => {
         Animated.spring(bubbleX, {
             toValue: -x * 100, // escala el movimiento
             useNativeDriver: true,
@@ -90,7 +90,7 @@ export default function Formulario() {
         Alert.alert(
             "Evaluación Terminada",
             cantidades,
-            [{ text: "OK", onPress: () => router.push('/') }]
+            [{ text: "OK", onPress: () => router.push('/(tabs)/PruebasMenu') }]
         );
     };
 

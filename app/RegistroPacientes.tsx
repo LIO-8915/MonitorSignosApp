@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { getAllPacientes, Paciente, savePaciente } from '../../services/database';
-import { SyncService } from '../../services/syncService';
+import { getAllPacientes, Paciente, savePaciente } from '../services/database';
+import { SyncService } from '../services/syncService';
 
 export default function RegistroPacientes() {
   const [nombre, setNombre] = useState('');

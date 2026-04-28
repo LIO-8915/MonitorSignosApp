@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { SyncService } from '../../services/syncService';
+import { SyncService } from '../services/syncService';
 
 interface Medico {
   id?: string;

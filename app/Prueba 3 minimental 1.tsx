@@ -12,10 +12,10 @@ import {
     View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CustomDatePicker } from '../../components/ui/datepicker 1';
-import { FormDropdown } from '../../components/ui/dropDown 1';
-import { FormField } from '../../components/ui/formField 1';
-import { FormSection } from '../../components/ui/formSection 1';
+import { CustomDatePicker } from '../components/ui/datepicker 1';
+import { FormDropdown } from '../components/ui/dropDown 1';
+import { FormField } from '../components/ui/formField 1';
+import { FormSection } from '../components/ui/formSection 1';
 
 const preguntas = [
     { id: 0, pregunta: '¿Qué año es?', Encabezado: 'Orientación Temporal' },
@@ -567,10 +567,10 @@ export default function PruebaMiniMental() {
                                                 <Image
                                                     source={
                                                         item.id === 15
-                                                            ? require('../../assets/images/reloj.jpg')
+                                                            ? require('../assets/images/reloj.jpg')
                                                             : item.id === 16
-                                                                ? require('../../assets/images/lapiz2.png')
-                                                                : require('../../assets/images/cierralosojos.png')
+                                                                ? require('../assets/images/lapiz2.png')
+                                                                : require('../assets/images/cierralosojos.png')
                                                     }
                                                     style={styles.testImage}
                                                     resizeMode="contain"

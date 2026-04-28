@@ -6,8 +6,8 @@ import { child, get, push, ref, set } from 'firebase/database';
 import React, { useEffect, useState } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getAllPacientes, Paciente, registrarEnBitacora } from '../../services/database';
-import { db } from '../../services/firebase';
+import { getAllPacientes, Paciente, registrarEnBitacora } from '../services/database';
+import { db } from '../services/firebase';
 
 export default function AgendarCita() {
   const router = useRouter();

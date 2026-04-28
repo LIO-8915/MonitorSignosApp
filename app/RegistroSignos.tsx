@@ -3,7 +3,7 @@ import { Picker } from '@react-native-picker/picker';
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getAllPacientes, Paciente, registrarEnBitacora, saveMedicionVital } from '../../services/database';
+import { getAllPacientes, Paciente, registrarEnBitacora, saveMedicionVital } from '../services/database';
 
 export default function RegistroSignos() {
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
