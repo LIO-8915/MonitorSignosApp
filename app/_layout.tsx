@@ -1,24 +1,64 @@
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import React, { useEffect, useState } from 'react';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
+import { ActivityIndicator, Button, LogBox, StyleSheet, Text, View } from 'react-native';
+import { DatabaseService } from '../services/database';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
+  const message = error instanceof Error ? error.message : "Error desconocido";
+  return (
+    <View style={styles.errorCentered}>
+      <Text style={styles.errorTitle}>Algo salió mal</Text>
+      <Text style={styles.errorDescription}>{message}</Text>
+      <Button title="Reintentar" onPress={resetErrorBoundary} color="#C53030" />
+    </View>
+  );
+}
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const [appIsReady, setAppIsReady] = useState(false);
+
+  useEffect(() => {
+    LogBox.ignoreLogs(['Setting a timer']);
+    async function initializeApp() {
+      try {
+        await DatabaseService();
+      } catch (e) {
+        console.error("Fallo de inicialización:", e);
+      } finally {
+        setAppIsReady(true);
+      }
+    }
+    initializeApp();
+  }, []);
+
+  if (!appIsReady) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorCentered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  errorTitle: { fontSize: 20, fontWeight: 'bold', color: '#C53030', marginBottom: 10 },
+  errorDescription: { textAlign: 'center', marginBottom: 20, color: '#666' }
+});

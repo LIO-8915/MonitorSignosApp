@@ -11,7 +11,11 @@
     "lint": "expo lint"
   },
   "dependencies": {
+    "@expo-google-fonts/signika": "^0.4.2",
     "@expo/vector-icons": "^15.0.3",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/datetimepicker": "8.4.4",
+    "@react-native-picker/picker": "^2.11.4",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
@@ -22,26 +26,39 @@
     "expo-image": "~3.0.11",
     "expo-linking": "~8.0.11",
     "expo-router": "~6.0.23",
+    "expo-sensors": "~15.0.8",
     "expo-splash-screen": "~31.0.13",
+    "expo-sqlite": "^55.0.15",
     "expo-status-bar": "~3.0.9",
     "expo-symbols": "~1.0.8",
     "expo-system-ui": "~6.0.9",
     "expo-web-browser": "~15.0.10",
+    "final-form": "^5.0.0",
+    "firebase": "^12.12.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-error-boundary": "^6.1.1",
+    "react-final-form": "^7.0.0",
+    "react-hook-form": "^7.73.1",
     "react-native": "0.81.5",
+    "react-native-async-storage": "^0.0.1",
+    "react-native-bouncy-checkbox": "^4.1.4",
+    "react-native-element-dropdown": "^2.12.4",
     "react-native-gesture-handler": "~2.28.0",
-    "react-native-worklets": "0.5.1",
+    "react-native-gifted-charts": "^1.4.76",
+    "react-native-linear-gradient": "^2.8.3",
+    "react-native-paper": "^5.15.1",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
-    "react-native-web": "~0.21.0"
+    "react-native-web": "~0.21.0",
+    "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
-    "typescript": "~5.9.2",
     "eslint": "^9.25.0",
-    "eslint-config-expo": "~10.0.0"
+    "eslint-config-expo": "~10.0.0",
+    "typescript": "~5.9.2"
   },
   "private": true
 }
