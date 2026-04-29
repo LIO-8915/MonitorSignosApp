@@ -129,6 +129,89 @@ export default function RootLayout() {
           }} 
         />
 
+        {/* Registro de Pruebas Individuales */}
+        <Drawer.Screen 
+          name="CitasEnCurso" 
+          options={{ 
+            drawerItemStyle: { display: 'none' } // Esto lo oculta del menú completamente
+          }} 
+        />
+
+        <Drawer.Screen 
+          name="AgendarCita" 
+          options={{ 
+            drawerItemStyle: { display: 'none' } // Esto lo oculta del menú completamente
+          }} 
+        />
+
+        <Drawer.Screen 
+          name="CitasPendietes" 
+          options={{ 
+            drawerItemStyle: { display: 'none' } // Esto lo oculta del menú completamente
+          }} 
+        />
+
+        <Drawer.Screen 
+          name="Cita" 
+          options={{ 
+            drawerItemStyle: { display: 'none' } // Esto lo oculta del menú completamente
+          }} 
+        />
+
+        {/* Registro de Pruebas Individuales */}
+        <Drawer.Screen 
+          name="Prueba20Entorno" 
+          options={{ drawerItemStyle: { display: 'none' }, title: 'Entorno' }} 
+        />
+        <Drawer.Screen 
+          name="Prueba19Maltrato" 
+          options={{ drawerItemStyle: { display: 'none' }, title: 'Maltrato' }} 
+        />
+        <Drawer.Screen 
+          name="Prueba18OARSScreen" 
+          options={{ drawerItemStyle: { display: 'none' }, title: 'Recursos Sociales' }} 
+        />
+        <Drawer.Screen 
+          name="Prueba15MNA-SF" 
+          options={{ drawerItemStyle: { display: 'none' }, title: 'Nutrición' }} 
+        />
+        <Drawer.Screen 
+          name="Prueba13Auditiva" 
+          options={{ drawerItemStyle: { display: 'none' }, title: 'Audición' }} 
+        />
+        <Drawer.Screen 
+          name="Prueba12Norton" 
+          options={{ drawerItemStyle: { display: 'none' }, title: 'Escala Norton' }} 
+        />
+        <Drawer.Screen 
+          name="Prueba11Braden" 
+          options={{ drawerItemStyle: { display: 'none' }, title: 'Escala Braden' }} 
+        />
+        <Drawer.Screen 
+          name="Prueba8Lawton" 
+          options={{ drawerItemStyle: { display: 'none' }, title: 'Lawton' }} 
+        />
+        <Drawer.Screen 
+          name="Prueba7KatzIndex" 
+          options={{ drawerItemStyle: { display: 'none' }, title: 'Índice de Katz' }} 
+        />
+        <Drawer.Screen 
+          name="Prueba6CESD7Test" 
+          options={{ drawerItemStyle: { display: 'none' }, title: 'Depresión' }} 
+        />
+        <Drawer.Screen 
+          name="Prueba5Formulario" 
+          options={{ drawerItemStyle: { display: 'none' }, title: 'Formulario' }} 
+        />
+        <Drawer.Screen 
+          name="Prueba4Moca" 
+          options={{ drawerItemStyle: { display: 'none' }, title: 'MoCA' }} 
+        />
+        <Drawer.Screen 
+          name="Prueba3Minimental" 
+          options={{ drawerItemStyle: { display: 'none' }, title: 'Minimental' }} 
+        />
+
       </Drawer>
     </GestureHandlerRootView>
   );
