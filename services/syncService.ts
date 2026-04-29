@@ -163,5 +163,40 @@ export const SyncService = {
   getPacientesParaMenu: async () => {
     const locales = await AsyncStorage.getItem('@pacientes_local');
     return locales ? JSON.parse(locales) : [];
+  },
+  addResultadoPrueba: async (
+  pacienteId: string, 
+  nombrePaciente: string, 
+  tipoPrueba: string, 
+  resultado: number, 
+  nota: string = "" // Cadena vacía por defecto si no se envía
+) => {
+  try {
+    const resultadosRef = ref(db, 'resultados_pruebas');
+    const nuevoResultadoRef = push(resultadosRef);
+
+    const datosFinales = {
+      pacienteId,
+      nombrePaciente,
+      tipoPrueba,
+      resultado,
+      nota,
+      fecha: new Date().toISOString(),
+    };
+
+    // Guardar en Firebase
+    await set(nuevoResultadoRef, datosFinales);
+
+    // Guardar en Local
+    const locales = await AsyncStorage.getItem('@resultados_local');
+    const lista = locales ? JSON.parse(locales) : [];
+    lista.push({ ...datosFinales, id: nuevoResultadoRef.key });
+    await AsyncStorage.setItem('@resultados_local', JSON.stringify(lista));
+
+    return { success: true };
+  } catch (error) {
+    console.error("❌ Error al guardar prueba:", error);
+    return { success: false };
   }
+},
 };

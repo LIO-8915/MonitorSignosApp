@@ -1,3 +1,4 @@
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
@@ -9,8 +10,35 @@ import {
 // CORRECCIÓN: Usar expo-sensors en lugar de react-native-sensors
 import { useFocusEffect } from '@react-navigation/native';
 import { Accelerometer } from 'expo-sensors';
+import { SyncService } from '../services/syncService';
 
 const CESD7Test = ({ navigation }: any) => {
+  const { pacienteId, nombrePaciente } = useLocalSearchParams();
+  const [resultado, setResultado] = useState<number>(0);
+
+  const finalizarPrueba = async (puntaje: number,diagnostico: string) => {
+      setResultado(puntaje);
+      console.log(resultado);
+      if (!pacienteId) {
+      Alert.alert("Error", "No hay un paciente vinculado a esta sesión.");
+      return;
+      }
+
+      try {
+      // 3. Guardar en Firebase usando tu SyncService [cite: 2]
+      // Nota: Puedes agregar un método 'addResultadoPrueba' en tu syncService.ts similar a 'addPaciente'
+      const response = await SyncService.addResultadoPrueba(String(pacienteId), String(nombrePaciente), "Prueba 6 CESD 7 Test", resultado, String(diagnostico)); 
+      
+      if (response.success) {
+          Alert.alert("Éxito", `Prueba guardada para el paciente: ${nombrePaciente}`);
+          router.replace('/PruebasMenu'); // Regresar al menú tras finalizar
+      }
+      } catch (error) {
+      Alert.alert("Error", "No se pudo sincronizar con Firebase.");
+      }
+  };
+
+  const router = useRouter();
   const [respuestas, setRespuestas] = useState(new Array(7).fill(null));
 
   useFocusEffect(
@@ -83,11 +111,10 @@ const CESD7Test = ({ navigation }: any) => {
       `Puntaje: ${puntajeTotal} puntos\n${interpretacion}`,
       [{
         text: "FINALIZAR",
-        onPress: () => navigation.navigate('Inicio', {
-          resultado: { puntos: puntajeTotal, interpretacion: interpretacion }
-        })
+        onPress: () => finalizarPrueba(puntajeTotal,interpretacion)        
       }]
     );
+    console.log(puntajeTotal);
   };
 
   return (

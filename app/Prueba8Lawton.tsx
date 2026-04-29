@@ -1,9 +1,38 @@
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Accelerometer } from "expo-sensors";
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
+import { SyncService } from '../services/syncService';
 
 export default function Lawton() {
+  const { pacienteId, nombrePaciente } = useLocalSearchParams();
+
+  const finalizarPrueba = async (puntaje: number,diagnostico: string) => {
+    if(totalRespondidas==5){
+      console.log(puntaje);
+      if (!pacienteId) {
+      Alert.alert("Error", "No hay un paciente vinculado a esta sesión.");
+      return;
+      }
+
+      try {
+      // 3. Guardar en Firebase usando tu SyncService [cite: 2]
+      // Nota: Puedes agregar un método 'addResultadoPrueba' en tu syncService.ts similar a 'addPaciente'
+      const response = await SyncService.addResultadoPrueba(String(pacienteId), String(nombrePaciente), "Prueba 6 CESD 7 Test", puntaje, String(diagnostico)); 
+      
+      if (response.success) {
+          Alert.alert("Éxito", `Prueba guardada para el paciente: ${nombrePaciente}`);
+          router.replace('/PruebasMenu'); // Regresar al menú tras finalizar
+      }
+      } catch (error) {
+      Alert.alert("Error", "No se pudo sincronizar con Firebase.");
+      }
+    }
+  };
+
+  const router = useRouter();
+
   const [resetKey, setResetKey] = useState(0);
   const [telefonoSi, setTelefonoSi] = useState(false);
   const [telefonoNo, setTelefonoNo] = useState(false);
@@ -97,8 +126,8 @@ export default function Lawton() {
       <View style={styles.instrucciones}>
         <Text style={styles.instruccionesTitulo}>Instrucciones</Text>
         <Text style={styles.instruccionesTexto}>
-          Evalúe la capacidad del paciente en cada área marcando "Sí" si lo
-          realiza de forma independiente o "No" si requiere ayuda o no puede
+          Evalúe la capacidad del paciente en cada área marcando &quot;Sí&quot; si lo
+          realiza de forma independiente o &quot;No&quot; si requiere ayuda o no puede
           hacerlo.------Mueva el dispositivo durante 5 segundos para limpiar las
           respuestas------
         </Text>
@@ -313,6 +342,15 @@ export default function Lawton() {
           </Text>
         </View>
       )}
+      <Pressable
+        style={({ pressed }) => [
+          styles.botonEvaluar,
+          { opacity: pressed ? 0.7 : 1 },
+        ]}
+        onPress={() => finalizarPrueba(puntuacion,String(resultado?.texto))}
+      >
+        <Text style={styles.textoEvaluar}>Finalizar Evaluacion</Text>
+      </Pressable>
       <View style={{ marginBottom: 40 }} />
     </ScrollView>
   );
@@ -322,6 +360,14 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
   },
+  botonEvaluar: {
+    backgroundColor: "#3B82F6",
+    paddingVertical: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  textoEvaluar: { color: "#FFFFFF", fontWeight: "bold", fontSize: 16 },
   instrucciones: {
     backgroundColor: "#f5f5f5",
     borderRadius: 8,

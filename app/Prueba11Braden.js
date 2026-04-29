@@ -1,8 +1,8 @@
-import React, {useState, useEffect } from 'react';
-import { Text, StyleSheet, TextInput, ScrollView, View, TouchableOpacity} from 'react-native';
-import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
-import { DataTable, Button } from 'react-native-paper';
 import { Accelerometer } from 'expo-sensors';
+import { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Button, DataTable } from 'react-native-paper';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 const BRADEN_TABLE = [
   {
@@ -50,6 +50,8 @@ const BRADEN_TABLE = [
 
 ];
 const BoldAndBeautiful = () => {
+
+
   const [selecciones, setSelecciones] = useState(Array(BRADEN_TABLE.length).fill(0));
   const [puntos, setPuntos] = useState(0);
   const [subscription, setSubscription] = useState(null);

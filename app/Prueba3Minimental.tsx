@@ -1,7 +1,9 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import { Accelerometer } from 'expo-sensors';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+    Alert,
     Image,
     Platform,
     ScrollView,
@@ -16,6 +18,7 @@ import { CustomDatePicker } from '../components/ui/datepicker 1';
 import { FormDropdown } from '../components/ui/dropDown 1';
 import { FormField } from '../components/ui/formField 1';
 import { FormSection } from '../components/ui/formSection 1';
+import { SyncService } from '../services/syncService';
 
 const preguntas = [
     { id: 0, pregunta: '¿Qué año es?', Encabezado: 'Orientación Temporal' },
@@ -40,6 +43,31 @@ const preguntas = [
 
 
 export default function PruebaMiniMental() {
+    const { pacienteId, nombrePaciente } = useLocalSearchParams();
+    const [resultado, setResultado] = useState<number>(0);
+
+    const finalizarPrueba = async () => {
+        setResultado(puntaje);
+        console.log(resultado);
+        if (!pacienteId) {
+        Alert.alert("Error", "No hay un paciente vinculado a esta sesión.");
+        return;
+        }
+
+        try {
+        // 3. Guardar en Firebase usando tu SyncService [cite: 2]
+        // Nota: Puedes agregar un método 'addResultadoPrueba' en tu syncService.ts similar a 'addPaciente'
+        const response = await SyncService.addResultadoPrueba(String(pacienteId), String(nombrePaciente), "Prueba 3 MMSE", resultado); 
+        
+        if (response.success) {
+            Alert.alert("Éxito", `Prueba guardada para el paciente: ${nombrePaciente}`);
+            router.replace('/PruebasMenu'); // Regresar al menú tras finalizar
+        }
+        } catch (error) {
+        Alert.alert("Error", "No se pudo sincronizar con Firebase.");
+        }
+    };
+
     const [escolaridad, setEscolaridad] = useState<number | null>(null);
     const puntajeEscolaridad =
         escolaridad !== null && escolaridad < 3 ? 5 : 0;
@@ -288,7 +316,7 @@ export default function PruebaMiniMental() {
                             <View style={styles.instructionBox}>
                                 <Text style={styles.instructionText}>
                                     <Text style={{ fontWeight: '800', color: '#0056D2' }}>Diga al paciente: </Text>
-                                    "Le voy a hacer unas preguntas sencillas para evaluar su estado mental"
+                                    &quot;Le voy a hacer unas preguntas sencillas para evaluar su estado mental&quot;
                                 </Text>
                             </View>
                             <Text style={styles.noteText}>
@@ -663,7 +691,8 @@ export default function PruebaMiniMental() {
                         <Text style={styles.btnTextCancel}>Cancelar</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={[styles.btnSubmit, isMobile && { width: '100%' }]}>
+                    <TouchableOpacity style={[styles.btnSubmit, isMobile && { width: '100%' }]}
+                        onPress={() =>finalizarPrueba()}>
                         <Text style={styles.btnTextSubmit}>Registrar Puntuaciones</Text>
                     </TouchableOpacity>
                 </View>

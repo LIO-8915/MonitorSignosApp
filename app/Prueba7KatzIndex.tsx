@@ -16,6 +16,8 @@ import {
   Signika_700Bold,
   useFonts,
 } from "@expo-google-fonts/signika";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { SyncService } from '../services/syncService';
 
 /**
  * KatzIndex.tsx
@@ -93,6 +95,32 @@ function Question({ title, description, value, onChange }: QuestionProps) {
 }
 
 export default function KatzIndex({ navigation }: any) {
+  const { pacienteId, nombrePaciente } = useLocalSearchParams();
+  const [resultado, setResultado] = useState<number>(0);
+
+  const finalizarPrueba = async (puntaje: number,diagnostico: string) => {
+      setResultado(puntaje);
+      console.log(resultado);
+      if (!pacienteId) {
+      Alert.alert("Error", "No hay un paciente vinculado a esta sesión.");
+      return;
+      }
+
+      try {
+      // 3. Guardar en Firebase usando tu SyncService [cite: 2]
+      // Nota: Puedes agregar un método 'addResultadoPrueba' en tu syncService.ts similar a 'addPaciente'
+      const response = await SyncService.addResultadoPrueba(String(pacienteId), String(nombrePaciente), "Prueba 7 Indice de Katz", resultado, String(diagnostico)); 
+      
+      if (response.success) {         
+          router.replace('/PruebasMenu'); // Regresar al menú tras finalizar
+      }
+      } catch (error) {
+      Alert.alert("Error", "No se pudo sincronizar con Firebase.");
+      }
+  };
+
+  const router = useRouter();
+
   const [answers, setAnswers] = useState<KatzAnswers>({
     bath: null,
     dress: null,
@@ -254,8 +282,12 @@ export default function KatzIndex({ navigation }: any) {
 
     Alert.alert(
       "Resultado del Índice de Katz",
-      `Resultado: ${independientes}/6\n\nClasificación: ${clasificacion}`,
+      `Resultado: ${independientes}/6\n\nClasificación: ${clasificacion}\n\nPrueba guardada para el paciente: ${nombrePaciente}`,[{
+        text: "FINALIZAR",
+        onPress: () => finalizarPrueba(independientes,clasificacion)
+      }]
     );
+    console.log(independientes);
   };
 
   // Questions map
@@ -331,8 +363,8 @@ export default function KatzIndex({ navigation }: any) {
           }}
         >
           A continuación se evaluarán distintas actividades básicas de la vida
-          diaria. Seleccione "Sí" si la persona puede realizar la actividad de
-          forma independiente o con asistencia mínima, y "No" si requiere ayuda
+          diaria. Seleccione &quot;Sí&quot; si la persona puede realizar la actividad de
+          forma independiente o con asistencia mínima, y &quot;No&quot; si requiere ayuda
           completa o no puede realizarla. En la sección de transferencias puede
           realizar una prueba utilizando los sensores del dispositivo para
           apoyar la evaluación.

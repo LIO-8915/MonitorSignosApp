@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Accelerometer } from "expo-sensors";
 import React, { useState } from "react";
 import {
@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { SyncService } from '../services/syncService';
 
 const PREGUNTAS = [
   {
@@ -84,6 +85,30 @@ const PREGUNTAS = [
 ];
 
 export default function FormularioScreen() {
+  const { pacienteId, nombrePaciente } = useLocalSearchParams();
+  const [resultado, setResultado] = useState<number>(0);
+
+  const finalizarPrueba = async (puntaje: number,diagnostico: string) => {
+      setResultado(puntaje);
+      console.log(resultado);
+      if (!pacienteId) {
+      Alert.alert("Error", "No hay un paciente vinculado a esta sesión.");
+      return;
+      }
+
+      try {
+      // 3. Guardar en Firebase usando tu SyncService [cite: 2]
+      // Nota: Puedes agregar un método 'addResultadoPrueba' en tu syncService.ts similar a 'addPaciente'
+      const response = await SyncService.addResultadoPrueba(String(pacienteId), String(nombrePaciente), "Prueba 5 Formulario General", resultado, String(diagnostico)); 
+      
+      if (response.success) {
+          Alert.alert("Éxito", `Prueba guardada para el paciente: ${nombrePaciente}`);
+          router.replace('/PruebasMenu'); // Regresar al menú tras finalizar
+      }
+      } catch (error) {
+      Alert.alert("Error", "No se pudo sincronizar con Firebase.");
+      }
+  };
   const router = useRouter();
   const [respuestas, setRespuestas] = useState<Record<number, string>>({});
 
@@ -154,12 +179,15 @@ export default function FormularioScreen() {
       [
         {
           text: "OK",
-          onPress: () => {
-             setRespuestas({});
+          onPress: () => {[
+             setRespuestas({}),
+             finalizarPrueba(puntaje,diagnostico)
+          ];
           }
         }
       ]
     );
+      console.log(puntaje);
   };
 
   return (

@@ -1,10 +1,12 @@
 import { FormField } from '@/components/ui/formField';
 import { FormSection } from '@/components/ui/formSection';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Accelerometer } from 'expo-sensors';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
+import React, { useState } from 'react';
 import {
+  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -14,8 +16,43 @@ import {
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SyncService } from '../services/syncService';
 
 export default function TabTwoScreen() {
+  const { pacienteId, nombrePaciente } = useLocalSearchParams();
+  const [resultado, setResultado] = useState<number>(0);
+
+  const finalizarPrueba = async () => {
+      setResultado(totalScore);
+      console.log(resultado);
+      if (!pacienteId) {
+      Alert.alert("Error", "No hay un paciente vinculado a esta sesión.");
+      return;
+      }
+
+      // Estructura del objeto a guardar en Firebase
+      const datosPrueba = {
+      pacienteId: pacienteId,
+      nombrePaciente: nombrePaciente,
+      tipoPrueba: "Prueba 4 MoCa",
+      resultado: resultado, // Aquí va el puntaje o JSON de respuestas
+      fecha: new Date().toISOString(),
+      };
+
+      try {
+      // 3. Guardar en Firebase usando tu SyncService [cite: 2]
+      // Nota: Puedes agregar un método 'addResultadoPrueba' en tu syncService.ts similar a 'addPaciente'
+      const response = await SyncService.addResultadoPrueba(String(pacienteId), String(nombrePaciente), "Prueba 4 MoCa", resultado); 
+      
+      if (response.success) {
+          Alert.alert("Éxito", `Prueba guardada para el paciente: ${nombrePaciente}`);
+          router.replace('/PruebasMenu'); // Regresar al menú tras finalizar
+      }
+      } catch (error) {
+      Alert.alert("Error", "No se pudo sincronizar con Firebase.");
+      }
+  };
+
   const [isAccelActive, setIsAccelActive] = React.useState(false);
   const [instruccionActual, setInstruccionActual] = React.useState(0);
   const [tiempoInicio, setTiempoInicio] = React.useState(0);
@@ -369,7 +406,8 @@ export default function TabTwoScreen() {
 
         <FormSection title="Terminar evaluación" subtitle=''>
           <View style={{ flex: 1 }}>
-            <TouchableOpacity style={styles.btnSubmit} onPress={() => console.log("Subir formulario completo", { totalScore, puntos, puntosResta })}>
+            <TouchableOpacity style={styles.btnSubmit} onPress={() => [console.log("Subir formulario completo", { totalScore, puntos, puntosResta }),
+                              finalizarPrueba()]}>
               <Text style={styles.btnTextSubmit}>Subir formulario</Text>
             </TouchableOpacity>
           </View>
