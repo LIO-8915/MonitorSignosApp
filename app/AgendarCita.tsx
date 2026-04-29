@@ -6,8 +6,9 @@ import { child, get, push, ref, set } from 'firebase/database';
 import React, { useEffect, useState } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getAllPacientes, Paciente, registrarEnBitacora } from '../services/database';
+import { Paciente, registrarEnBitacora } from '../services/database';
 import { db } from '../services/firebase';
+import { SyncService } from '../services/syncService';
 
 export default function AgendarCita() {
   const router = useRouter();
@@ -28,9 +29,11 @@ export default function AgendarCita() {
 
   useEffect(() => {
     const cargarDatos = async () => {
-      const listaPacientes = await getAllPacientes();
+      // ✅ Obtener pacientes desde la nube/local (Firebase + AsyncStorage)
+      const listaPacientes = await SyncService.getPacientes();
       setPacientes(listaPacientes);
 
+      // Médicos se quedan igual (desde Firebase)
       const dbRef = ref(db);
       const snapshot = await get(child(dbRef, 'medicos'));
       if (snapshot.exists()) {
@@ -82,17 +85,14 @@ export default function AgendarCita() {
       await set(nuevaCitaRef, nuevaCita);
       
       const usuario = await AsyncStorage.getItem('@ultimo_usuario') || 'Médico';
-      await registrarEnBitacora({
-        fecha: new Date().toLocaleDateString(),
-        hora: new Date().toLocaleTimeString(),
-        usuario,
-        movimiento: 'CITA'
-      });
+      // ✅ Corrección: pasar primero el movimiento, luego el usuario
+      await registrarEnBitacora('CITA', usuario);
 
       Alert.alert("Éxito", "Cita agendada correctamente");
       router.back();
-    } catch {
-      Alert.alert("Error", "No se pudo agendar la cita");
+    } catch (error) {
+        console.error(error);
+        Alert.alert("Error", "No se pudo agendar la cita");
     }
   };
 

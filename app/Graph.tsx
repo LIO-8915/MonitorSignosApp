@@ -24,15 +24,16 @@ export default function EvolucionDetalle() {
     const inicializar = async () => {
       try {
         setLoading(true);
-        const lista = await getAllPacientes(); 
+        // ✅ Usamos SyncService para obtener TODOS los pacientes (Firebase + AsyncStorage)
+        const lista = await SyncService.getPacientes();
         if (lista && lista.length > 0) {
           setPacientes(lista);
           setIdSeleccionado(lista[0].id.toString());
         } else {
-          console.log("⚠️ No hay pacientes en SQLite, intentando SyncService...");
-          const listaFirebase = await SyncService.getPacientesParaMenu();
-          setPacientes(listaFirebase);
-          if (listaFirebase.length > 0) setIdSeleccionado(listaFirebase[0].id);
+          console.log("⚠️ No hay pacientes en SyncService, intentando SQLite...");
+          const listaSQLite = await getAllPacientes();
+          setPacientes(listaSQLite);
+          if (listaSQLite.length > 0) setIdSeleccionado(listaSQLite[0].id.toString());
         }
       } catch (error) {
         console.error("❌ Error cargando pacientes:", error);

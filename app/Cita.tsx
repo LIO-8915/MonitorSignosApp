@@ -4,31 +4,32 @@ import { equalTo, onValue, orderByChild, query, ref } from 'firebase/database';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getAllPacientes, Paciente } from '../services/database';
 import { db } from '../services/firebase';
+import { SyncService } from '../services/syncService'; // ✅ Importar SyncService
 
 export default function CitaHistorial() {
   const [loading, setLoading] = useState(false);
   const [citas, setCitas] = useState<any[]>([]);
-  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [pacientes, setPacientes] = useState<any[]>([]); // Tipo genérico para pacientes de SyncService
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState<string>('');
 
-  // 1. Cargar la lista de pacientes desde SQLite al montar el componente
+  // 1. Cargar pacientes desde SyncService (Firebase + AsyncStorage)
   useEffect(() => {
     const inicializar = async () => {
-      const lista = await getAllPacientes();
+      const lista = await SyncService.getPacientes(); // ✅ Fuente unificada
       setPacientes(lista);
       
-      // Opcional: Cargar el paciente que estaba seleccionado previamente
       const idGuardado = await AsyncStorage.getItem('@id_paciente_actual');
-      if (idGuardado) {
+      if (idGuardado && lista.some(p => p.id === idGuardado)) {
         setPacienteSeleccionado(idGuardado);
+      } else if (lista.length > 0) {
+        setPacienteSeleccionado(lista[0].id);
       }
     };
     inicializar();
   }, []);
 
-  // 2. Escuchar las citas en Firebase cada vez que cambie el paciente seleccionado
+  // 2. Escuchar citas en Firebase según paciente seleccionado
   useEffect(() => {
     if (!pacienteSeleccionado) {
       setCitas([]);
@@ -49,16 +50,13 @@ export default function CitaHistorial() {
         Object.keys(data).forEach(key => {
           lista.push({ id: key, ...data[key] });
         });
-        // Ordenar por fecha de creación (asumiendo que guardas createdAt)
         lista.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
       }
       setCitas(lista);
       setLoading(false);
     });
 
-    // Guardar en AsyncStorage para persistencia de la última selección
     AsyncStorage.setItem('@id_paciente_actual', pacienteSeleccionado);
-
     return () => unsubscribe();
   }, [pacienteSeleccionado]);
 
@@ -69,7 +67,6 @@ export default function CitaHistorial() {
         <Text style={styles.subtitle}>Selecciona un paciente para ver sus registros</Text>
       </View>
 
-      {/* Picker de Pacientes */}
       <View style={styles.pickerContainer}>
         <Picker
           selectedValue={pacienteSeleccionado}
@@ -78,7 +75,7 @@ export default function CitaHistorial() {
         >
           <Picker.Item label="-- Seleccione un paciente --" value="" />
           {pacientes.map((p) => (
-            <Picker.Item key={p.id} label={`${p.nombre} ${p.apellido}`} value={p.id} />
+            <Picker.Item key={p.id} label={`${p.nombre} ${p.apellido || ''}`} value={p.id} />
           ))}
         </Picker>
       </View>
@@ -114,6 +111,8 @@ export default function CitaHistorial() {
     </SafeAreaView>
   );
 }
+
+// Los estilos se mantienen igual
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F2F2F7' },
