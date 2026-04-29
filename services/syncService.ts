@@ -103,5 +103,65 @@ export const SyncService = {
       pacientes: pacientesRaw ? JSON.parse(pacientesRaw) : [],
       medicos: medicosRaw ? JSON.parse(medicosRaw) : []
     };
+  },
+
+  getPacientes: async () => {
+    try {
+      // Priorizamos datos locales para mayor velocidad en el Picker
+      const locales = await AsyncStorage.getItem('@pacientes_local');
+      if (locales) return JSON.parse(locales);
+
+      // Si no hay locales, traemos de Firebase
+      const dbRef = ref(db);
+      const snapshot = await get(child(dbRef, 'pacientes'));
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const lista = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+        await AsyncStorage.setItem('@pacientes_local', JSON.stringify(lista));
+        return lista;
+      }
+      return [];
+    } catch (error) {
+      console.error("❌ Error al obtener pacientes:", error);
+      return [];
+    }
+  },
+
+  // GUARDAR RESULTADO DE PRUEBA (Vinculación con Paciente)
+  // Este método es el que usarán tus compañeros de equipo al finalizar cada evaluación
+  savePruebaResult: async (pacienteId: string, pruebaNombre: string, puntaje: number, detalles: any = {}) => {
+    try {
+      const resultadosRef = ref(db, 'resultados_pruebas');
+      const nuevoResultadoRef = push(resultadosRef);
+
+      const dataFinal = {
+        pacienteId, // Vínculo esencial para el historial
+        pruebaNombre,
+        puntaje,
+        detalles,
+        timestamp: new Date().toISOString()
+      };
+
+      // Guardar en Firebase RTDB
+      await set(nuevoResultadoRef, dataFinal);
+
+      // Actualizar historial local (AsyncStorage)
+      const locales = await AsyncStorage.getItem('@resultados_local');
+      const lista = locales ? JSON.parse(locales) : [];
+      lista.push({ ...dataFinal, id: nuevoResultadoRef.key });
+      await AsyncStorage.setItem('@resultados_local', JSON.stringify(lista));
+
+      console.log(`✅ Resultado de ${pruebaNombre} guardado para paciente:`, pacienteId);
+      return { success: true, id: nuevoResultadoRef.key };
+    } catch (error) {
+      console.error("❌ Error al guardar resultado de prueba:", error);
+      throw error;
+    }
+  },
+
+  // En SyncService.ts
+  getPacientesParaMenu: async () => {
+    const locales = await AsyncStorage.getItem('@pacientes_local');
+    return locales ? JSON.parse(locales) : [];
   }
 };
