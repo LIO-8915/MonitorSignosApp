@@ -90,7 +90,7 @@ export default function Formulario() {
         Alert.alert(
             "Evaluación Terminada",
             cantidades,
-            [{ text: "OK", onPress: () => router.push('/(tabs)/PruebasMenu') }]
+            [{ text: "OK", onPress: () => router.push('/PruebasMenu') }]
         );
     };
 

@@ -26,7 +26,7 @@ export default function PacientesScreen() {
       {/* Botón que redirige a registro pacientes */}
       <TouchableOpacity 
         style={styles.fab}
-        onPress={() => router.push('/(tabs)/RegistroPacientes')}
+        onPress={() => router.push('/RegistroPacientes')}
       >
         <Text style={styles.fabText}>+ Nuevo Paciente</Text>
       </TouchableOpacity>
