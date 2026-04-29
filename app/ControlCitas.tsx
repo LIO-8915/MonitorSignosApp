@@ -27,7 +27,7 @@ const ControlCita = () => {
     },
     { 
       title: 'Citas Pendientes', // Este botón manda a la pantalla de validación/cambio de estado
-      route: '/CitasPendientes', 
+      route: '/CitasPendietes', 
       icon: 'clipboard-list-outline', 
       color: '#5856D6',
       desc: 'Validar y pasar a "En curso"' 

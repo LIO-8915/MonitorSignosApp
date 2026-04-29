@@ -1,11 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
-import { equalTo, onValue, orderByChild, query, ref } from 'firebase/database';
+import { equalTo, get, onValue, orderByChild, query, ref, update } from 'firebase/database';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { registrarBitacora } from '../services/bitacoraService';
 import { db } from '../services/firebase';
 import { SyncService } from '../services/syncService';
+
 
 // Interfaz para pacientes (la que devuelve SyncService)
 interface PacienteSimple {
@@ -114,6 +117,66 @@ export default function CitaHistorial() {
     setPacienteSeleccionado(value);
   }, []);
 
+  const [modalVisible, setModalVisible] = useState(false);
+  const [citaEditando, setCitaEditando] = useState<any>(null);
+  const [nuevaFecha, setNuevaFecha] = useState('');
+  const [nuevaHora, setNuevaHora] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const verificarDisponibilidad = async (fecha: string, hora: string): Promise<boolean> => {
+    try {
+      const citasRef = ref(db, 'citas');
+      const snapshot = await get(citasRef);
+      if (!snapshot.exists()) return true;
+      const data = snapshot.val();
+      const colision = Object.values(data).some((cita: any) =>
+        cita.fecha === fecha &&
+        cita.hora === hora &&
+        cita.estado !== 'Cancelada' &&
+        cita.id !== citaEditando?.id // evitar colisión consigo misma
+      );
+      return !colision;
+    } catch (error) {
+      console.error('Error verificando disponibilidad:', error);
+      return false;
+    }
+  };
+
+  const reagendarCita = async () => {
+    if (!citaEditando || !nuevaFecha || !nuevaHora) return;
+
+    // Validar disponibilidad
+    const disponible = await verificarDisponibilidad(nuevaFecha, nuevaHora);
+    if (!disponible) {
+      Alert.alert("Horario ocupado", "Ya existe otra cita activa en ese horario.");
+      return;
+    }
+
+     try {
+      const citaRef = ref(db, `citas/${citaEditando.id}`);
+      await update(citaRef, {
+        fecha: nuevaFecha,
+        hora: nuevaHora,
+        estado: 'Reagendada',
+        updatedAt: new Date().toISOString()
+      });
+
+      // Registrar en bitácora
+      await registrarBitacora(
+        citaEditando.pacienteId,
+        'Cita Reagendada',
+        `De ${citaEditando.fecha} ${citaEditando.hora} → ${nuevaFecha} ${nuevaHora}`
+      );
+
+      Alert.alert('Éxito', 'Cita reagendada correctamente');
+      setModalVisible(false);
+      setCitaEditando(null);
+    } catch (error) {
+      console.error('Error al actualizar la cita:', error);
+      Alert.alert('Error', 'No se pudo reagendar la cita');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -162,6 +225,16 @@ export default function CitaHistorial() {
                   ● {item.status ? item.status.toUpperCase() : 'PENDIENTE'}
                 </Text>
               </View>
+              <TouchableOpacity
+                style={styles.reagendarBtn}
+                onPress={() => {
+                  setCitaEditando(item);
+                  setNuevaFecha(item.fecha);
+                  setNuevaHora(item.hora);
+                  setModalVisible(true);
+                }}>
+                <Text style={styles.reagendarText}>Reagendar</Text>
+              </TouchableOpacity>
             </View>
           )}
           ListEmptyComponent={
@@ -170,6 +243,68 @@ export default function CitaHistorial() {
             ) : null
           }
         />
+      )}
+      {modalVisible && (
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Reagendar cita</Text>
+              
+              <TouchableOpacity style={styles.dateSelector} onPress={() => setShowDatePicker(true)}>
+                <Text>{nuevaFecha || 'Seleccionar fecha'}</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.dateSelector} onPress={() => setShowTimePicker(true)}>
+                <Text>{nuevaHora || 'Seleccionar hora'}</Text>
+              </TouchableOpacity>
+              
+              {showDatePicker && (
+                <DateTimePicker
+                  value={new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={(event, selectedDate) => {
+                    setShowDatePicker(false);
+                    if (selectedDate) {
+                      setNuevaFecha(selectedDate.toLocaleDateString('es-MX'));
+                    }
+                  }}
+                />
+              )}
+              
+              {showTimePicker && (
+                <DateTimePicker
+                  value={new Date()}
+                  mode="time"
+                  is24Hour={true}
+                  display="default"
+                  onChange={(event, selectedTime) => {
+                    setShowTimePicker(false);
+                    if (selectedTime) {
+                      const horas = selectedTime.getHours().toString().padStart(2, '0');
+                      const minutos = selectedTime.getMinutes().toString().padStart(2, '0');
+                      setNuevaHora(`${horas}:${minutos}`);
+                    }
+                  }}
+                />
+              )}
+              
+              <View style={styles.modalButtons}>
+                <TouchableOpacity style={styles.btnCancelar} onPress={() => setModalVisible(false)}>
+                  <Text>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.btnConfirmar} onPress={reagendarCita}>
+                  <Text style={{ color: '#FFF' }}>Confirmar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       )}
     </SafeAreaView>
   );
@@ -214,4 +349,64 @@ const styles = StyleSheet.create({
   motivo: { fontSize: 16, fontWeight: '600', color: '#1C1C1E' },
   status: { fontSize: 12, fontWeight: 'bold', marginTop: 5 },
   empty: { textAlign: 'center', marginTop: 40, color: '#8E8E93', fontSize: 16 },
+  reagendarBtn: {
+    backgroundColor: '#FF9500',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  reagendarText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 20,
+    width: '80%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  dateSelector: {
+    borderWidth: 1,
+    borderColor: '#CCC',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 15,
+    alignItems: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  btnCancelar: {
+    backgroundColor: '#CCC',
+    padding: 10,
+    borderRadius: 8,
+    flex: 1,
+    marginRight: 10,
+    alignItems: 'center',
+  },
+  btnConfirmar: {
+    backgroundColor: '#FF9500',
+    padding: 10,
+    borderRadius: 8,
+    flex: 1,
+    marginLeft: 10,
+    alignItems: 'center',
+  },
 });

@@ -52,6 +52,8 @@ export default function RootLayout() {
           },
         }}
       >
+        <Drawer.Screen 
+        name="Bitacora" options={{ title: 'Bitácora', drawerLabel: 'Bitácora'}} />
         {/* === SECCIÓN DE PACIENTES === */}
         <Drawer.Screen 
           name="Pacientes" 

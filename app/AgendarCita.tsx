@@ -6,7 +6,8 @@ import { child, get, push, ref, set } from 'firebase/database';
 import React, { useEffect, useState } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Paciente, registrarEnBitacora } from '../services/database';
+import { registrarBitacora } from '../services/bitacoraService';
+import { Paciente } from '../services/database';
 import { db } from '../services/firebase';
 import { SyncService } from '../services/syncService';
 
@@ -64,10 +65,35 @@ export default function AgendarCita() {
     }
   };
 
+  const verificarDisponibilidad = async (fecha: string, hora: string): Promise<boolean> => {
+    try {
+      const citasRef = ref(db, 'citas');
+      const snapshot = await get(citasRef);
+      if (!snapshot.exists()) return true;
+      
+      const data = snapshot.val();
+      const colision = Object.values(data).some((cita: any) =>
+        cita.fecha === fecha &&
+        cita.hora === hora &&
+        cita.estado !== 'Cancelada'
+      );
+      return !colision;
+    } catch (error) {
+      console.error("Error verificando disponibilidad:", error);
+      return false;
+    }
+  };
+
   const agendarCita = async () => {
     // Validación de campos
     if (!pacienteId || !fechaValidada || horaTexto.includes('Seleccionar')) {
       return Alert.alert("Campos incompletos", "Por favor selecciona un paciente, fecha y hora.");
+    }
+
+    const disponible = await verificarDisponibilidad(fechaTexto, horaTexto);
+    if (!disponible) {
+      Alert.alert("Horario ocupado", "Ya existe una cita activa en esa fecha y hora.");
+      return;
     }
 
     const nuevaCitaRef = push(ref(db, 'citas'));
@@ -77,16 +103,16 @@ export default function AgendarCita() {
       fecha: fechaTexto,
       hora: horaTexto,
       motivo,
-      status: 'en curso',
+      estado: 'Agendada',   // ← nuevo campo
       createdAt: new Date().toISOString()
     };
 
-    try {
+    try {      
       await set(nuevaCitaRef, nuevaCita);
       
       const usuario = await AsyncStorage.getItem('@ultimo_usuario') || 'Médico';
-      // ✅ Corrección: pasar primero el movimiento, luego el usuario
-      await registrarEnBitacora('CITA', usuario);
+      // ✅ Corrección: pasar primero el movimiento, luego el usuario      
+      await registrarBitacora(pacienteId, 'Cita Agendada', `Fecha: ${fechaTexto} Hora: ${horaTexto}`);
 
       Alert.alert("Éxito", "Cita agendada correctamente");
       router.back();
