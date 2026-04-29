@@ -81,7 +81,7 @@ export default function EvolucionDetalle() {
             selectedValue={idSeleccionado}
             onValueChange={(val) => setIdSeleccionado(val)}
           >
-            {pacientes.map(p => (
+            {pacientes.map((p: Paciente) => (
               <Picker.Item key={p.id} label={p.nombre} value={p.id.toString()} />
             ))}
           </Picker>
