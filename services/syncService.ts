@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { child, get, push, ref, set } from 'firebase/database'; // Importaciones de RTDB
+import { child, get, push, ref, remove, set } from 'firebase/database';
 import { db } from './firebase';
 
 /**
@@ -209,6 +209,27 @@ export const SyncService = {
     } catch (error) {
       console.error("Error al obtener resultados locales:", error);
       return [];
+    }
+  },
+  deletePaciente: async (pacienteId: string) => {
+    try {
+      // 1. Eliminar de Firebase Realtime Database
+      const pacienteRef = ref(db, `pacientes/${pacienteId}`);
+      await remove(pacienteRef);
+
+      // 2. Eliminar del almacenamiento local (AsyncStorage)
+      const locales = await AsyncStorage.getItem('@pacientes_local');
+      if (locales) {
+        let lista = JSON.parse(locales);
+        lista = lista.filter((p: any) => p.id !== pacienteId);
+        await AsyncStorage.setItem('@pacientes_local', JSON.stringify(lista));
+      }
+
+      console.log(`✅ Paciente ${pacienteId} eliminado correctamente`);
+      return { success: true };
+    } catch (error) {
+      console.error("❌ Error al eliminar paciente:", error);
+      return { success: false, error };
     }
   },
 };

@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
+
 //////// --- INTERFACES --- ////////
 
 export interface Paciente {
