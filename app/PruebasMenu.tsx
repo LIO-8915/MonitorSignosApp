@@ -75,98 +75,158 @@
 // });
 
 // app/PruebasMenu.tsx (o donde tengas el componente)
-import { router } from 'expo-router';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
+import React from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function PruebasMenu() {
   // ============================================================
   // OPCIÓN 1: MAPEO A PANTALLAS SEPARADAS (Prueba1, Prueba2, ...)
   // ============================================================
-  const rutasPruebas: Record<number, string> = {
-    20: '/Prueba 20 entorno',      // asumiendo app/prueba1.tsx
-    19: '/Prueba 19 Maltrato',
-    18: '/Prueba 18 OARSSScreen',
-    15: '/Prueba 15 MNA-SF',
-    13: '/Prueba 13 Auditiva',
-    12: '/Prueba 12 Norton',
-    11: '/Prueba 11 Braden',
-    8: '/Prueba 8 Lawton',
-    7: '/Prueba 7 KatzIndex',
-    6: '/Prueba 6 CESD7Test',
-    5: '/Prueba 5 formulario',
-    4: '/Prueba 4 moca',
-    3: '/Prueba 3 minimental 1',
-    // Agrega más según necesites
-  };
+  const rutasPruebas: [number, string, string, string, string][] = [
+  // [ID, Ruta, Nombre Visible, Icono, Color]
+  [20, '/Prueba20Entorno', 'Valoración Entorno', 'home', '#607D8B'],
+  [19, '/Prueba19Maltrato', 'Detección Maltrato', 'warning', '#E91E63'],
+  [18, '/Prueba18OARSSScreen', 'Recursos Sociales', 'people', '#9C27B0'],
+  [15, '/Prueba15MNA-SF', 'Nutrición (MNA-SF)', 'restaurant', '#4CAF50'],
+  [13, '/Prueba13Auditiva', 'Capacidad Auditiva', 'ear', '#00BCD4'],
+  [12, '/Prueba12Norton', 'Escaras (Norton)', 'body', '#FF9800'],
+  [11, '/Prueba11Braden', 'Escaras (Braden)', 'shield', '#FF5722'],
+  [8, '/Prueba8Lawton', 'Act. Instrumentales', 'construct', '#795548'],
+  [7, '/Prueba7KatzIndex', 'Act. Básicas (Katz)', 'walk', '#3F51B5'],
+  [6, '/Prueba6CESD7Test', 'Depresión (CESD-7)', 'sad', '#2196F3'],
+  [5, '/Prueba5Formulario', 'Formulario General', 'document-text', '#009688'],
+  [4, '/Prueba4Moca', 'Cognición (MoCA)', 'bulb', '#673AB7'],
+  [3, '/Prueba3Minimental', 'Minimental (MMSE)', 'fitness', '#f44336']
+];
 
-  // ============================================================
-  // OPCIÓN 2: RUTA DINÁMICA (una sola pantalla para todas)
-  // Descomenta esta línea y comenta la de arriba si usas /pruebas/[id]
-  // ============================================================
-  // const navegarAPrueba = (id: number) => {
-  //   router.push(`/pruebas/${id}`);
-  // };
-
-  // Función de navegación usando el mapeo (Opción 1)
-  const navegarAPrueba = (id: number) => {
-    const ruta = rutasPruebas[id];
+  const navegarAPrueba = (ruta: string) => {
     if (ruta) {
-      router.push(ruta);
+      // Pasamos el ID del paciente vinculado a la prueba elegida
+      router.push({
+        pathname: ruta as any,
+        params: { pacienteId, nombrePaciente }
+      });
     } else {
-      Alert.alert('Prueba no disponible', `La prueba ${id} aún no está implementada.`);
+      Alert.alert('Prueba no disponible', 'La prueba aún no está implementada.');
     }
   };
 
   // Lista de números de prueba (1..10)
   const pruebas = Object.keys(rutasPruebas).map(Number); // [1,2,...,10]
+  const { pacienteId, nombrePaciente } = useLocalSearchParams();
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.titulo}>Menú de Pruebas</Text>
-      {pruebas.map((num) => (
+    <ScrollView style={styles.mainContainer} contentContainerStyle={styles.scrollContent}>
+      <View style={styles.header}>
+        <Text style={styles.titulo}>Menú de Pruebas</Text>
+        <Text style={styles.subtitulo}>
+          Evaluando a: <Text style={styles.pacienteNombre}>{nombrePaciente || 'Sin seleccionar'}</Text>
+        </Text>
+      </View>
+
+      {rutasPruebas.map(([numero, ruta, nombre, icono, color]) => (
         <TouchableOpacity
-          key={num}
-          style={styles.boton}
-          onPress={() => navegarAPrueba(num)} // función flecha para evitar ejecución anticipada
+          key={numero}
+          style={styles.card}
+          onPress={() => navegarAPrueba(ruta)}
+          activeOpacity={0.7}
         >
-          <Text style={styles.textoBoton}>Prueba {num}</Text>
+          {/* Contenedor del Icono */}
+          <View style={[styles.iconContainer, { backgroundColor: color }]}>
+            <Ionicons name={icono as any} size={24} color="#fff" />
+          </View>
+
+          {/* Información de la Prueba */}
+          <View style={styles.infoContainer}>
+            <Text style={styles.labelPrueba}>PRUEBA {numero}</Text>
+            <Text style={styles.nombrePrueba}>{nombre}</Text>
+          </View>
+
+          {/* Indicador lateral */}
+          <Ionicons name="chevron-forward" size={20} color="#ccc" />
         </TouchableOpacity>
       ))}
+
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>GediatricApp - 8vo Semestre</Text>
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 30,
-    backgroundColor: '#f0f4f7',
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#f2f5f8',
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  header: {
+    marginBottom: 25,
+    paddingHorizontal: 5,
   },
   titulo: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 25,
-    color: '#2c3e50',
+    color: '#1a2a3a',
   },
-  boton: {
-    backgroundColor: '#3498db',
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-    borderRadius: 30,
-    marginVertical: 10,
-    width: '70%',
+  subtitulo: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 5,
+  },
+  pacienteNombre: {
+    fontWeight: 'bold',
+    color: '#3498db',
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 12,
+    // Sombras para Android/Redmi
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 4,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  textoBoton: {
-    color: '#fff',
-    fontSize: 18,
+  iconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  infoContainer: {
+    flex: 1,
+    marginLeft: 15,
+  },
+  labelPrueba: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#95a5a6',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  nombrePrueba: {
+    fontSize: 16,
     fontWeight: '600',
+    color: '#2c3e50',
+    marginTop: 2,
+  },
+  footer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#bdc3c7',
   },
 });
