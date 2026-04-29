@@ -5,7 +5,9 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet, Text, View
+  StyleSheet,
+  Text,
+  View
 } from 'react-native';
 // CORRECCIÓN: Usar expo-sensors en lugar de react-native-sensors
 import { useFocusEffect } from '@react-navigation/native';
@@ -31,7 +33,7 @@ const CESD7Test = ({ navigation }: any) => {
       
       if (response.success) {
           Alert.alert("Éxito", `Prueba guardada para el paciente: ${nombrePaciente}`);
-          router.replace('/PruebasMenu'); // Regresar al menú tras finalizar
+          //router.back(); // Regresar al menú tras finalizar
       }
       } catch (error) {
       Alert.alert("Error", "No se pudo sincronizar con Firebase.");

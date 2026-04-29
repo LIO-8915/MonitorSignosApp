@@ -1,16 +1,41 @@
-import React, { useState, useEffect } from "react";
-import {
-View,
-Text,
-StyleSheet,
-ScrollView,
-TouchableOpacity,
-TextInput,
-Alert,
-} from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Gyroscope } from "expo-sensors";
+import { useEffect, useState } from "react";
+import {
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { SyncService } from '../services/syncService';
 
 export default function EscalaMaltrato() {
+    const { pacienteId, nombrePaciente } = useLocalSearchParams();
+    const finalizarPrueba = async (puntaje,diagnostico) => {
+    console.log(puntaje);
+    if (!pacienteId) {
+        Alert.alert("Error", "No hay un paciente vinculado a esta sesión.");
+        return;
+    }
+
+    try {
+        // 3. Guardar en Firebase usando tu SyncService [cite: 2]
+        // Nota: Puedes agregar un método 'addResultadoPrueba' en tu syncService.ts similar a 'addPaciente'
+        const response = await SyncService.addResultadoPrueba(String(pacienteId), String(nombrePaciente), "Prueba 19 Maltrato", puntaje, String(diagnostico)); 
+        
+        if (response.success) {
+        Alert.alert("Éxito", `Prueba guardada para el paciente: ${nombrePaciente}`);
+        //router.back(); // Regresar al menú tras finalizar
+        }
+    } catch (error) {
+        Alert.alert("Error", "No se pudo sincronizar con Firebase.");
+        console.log(error);
+    }
+    };
+    const router = useRouter();
 
 const preguntas = [
 "¿Le han golpeado?",
@@ -143,12 +168,14 @@ return;
 const total = calcularTotal();
 const interpretacion = interpretarResultado(total);
 
-Alert.alert(
-"Resultado",
-`Total de respuestas "Sí": ${total}
+// Alert.alert(
+// "Resultado",
+// `Total de respuestas "Sí": ${total}
 
-${interpretacion}`
-);
+// ${interpretacion}`
+// );
+
+    finalizarPrueba(total,interpretacion)
 
 };
 

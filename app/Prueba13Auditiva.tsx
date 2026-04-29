@@ -1,3 +1,4 @@
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Accelerometer } from 'expo-sensors';
 import React, { useEffect, useState } from 'react';
 import {
@@ -10,8 +11,33 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { SyncService } from '../services/syncService';
 
 const PruebaSusurro = () => {
+  const { pacienteId, nombrePaciente } = useLocalSearchParams();
+  const finalizarPruebas = async (puntaje: number,diagnostico: string) => {    
+    console.log(puntaje);
+    if (!pacienteId) {
+      Alert.alert("Error", "No hay un paciente vinculado a esta sesión.");
+      return;
+    }
+
+    try {
+      // 3. Guardar en Firebase usando tu SyncService [cite: 2]
+      // Nota: Puedes agregar un método 'addResultadoPrueba' en tu syncService.ts similar a 'addPaciente'
+      const response = await SyncService.addResultadoPrueba(String(pacienteId), String(nombrePaciente), "Prueba 13 Capacidad Auditiva", puntaje, String(diagnostico)); 
+      
+      if (response.success) {
+        Alert.alert("Éxito", `Prueba guardada para el paciente: ${nombrePaciente}`);
+        //router.back(); // Regresar al menú tras finalizar
+      }
+    } catch (error) {
+      Alert.alert("Error", "No se pudo sincronizar con Firebase.");
+      console.log(error);
+    }
+  };
+  const router = useRouter();
+
   const [combDerecho, setCombDerecho] = useState('');
   const [combIzquierdo, setCombIzquierdo] = useState('');
   // const [resultadoDerecho, setResultadoDerecho] = useState(null);
@@ -74,6 +100,7 @@ const PruebaSusurro = () => {
             setResultadoIzquierdo(null);
             setCombDerecho(generarCombinacion());
             setCombIzquierdo(generarCombinacion());
+            finalizarPruebas(0,diagnostico);
           }
         }
       ]

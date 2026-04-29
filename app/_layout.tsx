@@ -22,7 +22,7 @@ function CustomDrawerContent(props: any) {
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Semestre 8 - CICIMAR</Text>
+        <Text style={styles.footerText}>Semestre 8</Text>
       </View>
     </DrawerContentScrollView>
   );

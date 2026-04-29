@@ -19,11 +19,11 @@ export default function Lawton() {
       try {
       // 3. Guardar en Firebase usando tu SyncService [cite: 2]
       // Nota: Puedes agregar un método 'addResultadoPrueba' en tu syncService.ts similar a 'addPaciente'
-      const response = await SyncService.addResultadoPrueba(String(pacienteId), String(nombrePaciente), "Prueba 6 CESD 7 Test", puntaje, String(diagnostico)); 
+      const response = await SyncService.addResultadoPrueba(String(pacienteId), String(nombrePaciente), "Prueba 8 Lawton", puntaje, String(diagnostico)); 
       
       if (response.success) {
           Alert.alert("Éxito", `Prueba guardada para el paciente: ${nombrePaciente}`);
-          router.replace('/PruebasMenu'); // Regresar al menú tras finalizar
+          //router.back(); // Regresar al menú tras finalizar
       }
       } catch (error) {
       Alert.alert("Error", "No se pudo sincronizar con Firebase.");

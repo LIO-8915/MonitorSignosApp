@@ -1,8 +1,10 @@
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Accelerometer } from 'expo-sensors';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, } from 'react-native';
 import { Button, DataTable } from 'react-native-paper';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SyncService } from '../services/syncService';
 
 const BRADEN_TABLE = [
   {
@@ -50,7 +52,39 @@ const BRADEN_TABLE = [
 
 ];
 const BoldAndBeautiful = () => {
+  const { pacienteId, nombrePaciente } = useLocalSearchParams();
 
+  const finalizarPrueba = async (puntaje) => {
+    let diagnostico;
+
+    if(puntaje<=12)
+      diagnostico = "Alto riesgo: puntuacion Total 12";            
+    if(puntaje>=13 && puntaje<15)
+      diagnostico = "Riesgo medio: puntuacion Total 13-14"
+    if(puntaje>=15 && puntaje<16)
+      diagnostico = "Bajo riesgo: puntuacion Total 15-16"
+
+    console.log(puntaje);
+    if (!pacienteId) {
+      Alert.alert("Error", "No hay un paciente vinculado a esta sesión.");
+      return;
+    }
+
+    try {
+      // 3. Guardar en Firebase usando tu SyncService [cite: 2]
+      // Nota: Puedes agregar un método 'addResultadoPrueba' en tu syncService.ts similar a 'addPaciente'
+      const response = await SyncService.addResultadoPrueba(String(pacienteId), String(nombrePaciente), "Prueba 11 Escala de Braden", puntaje, String(diagnostico)); 
+      
+      if (response.success) {
+        Alert.alert("Éxito", `Prueba guardada para el paciente: ${nombrePaciente}`);
+        //router.back(); // Regresar al menú tras finalizar
+      }
+    } catch (error) {
+        Alert.alert("Error", "No se pudo sincronizar con Firebase.");
+        console.log(error);
+    }
+  };
+  const router = useRouter();
 
   const [selecciones, setSelecciones] = useState(Array(BRADEN_TABLE.length).fill(0));
   const [puntos, setPuntos] = useState(0);
@@ -167,7 +201,10 @@ const BoldAndBeautiful = () => {
           <Button
             icon="content-save"
             mode="contained"
-            onPress={() => console.log('Guardado:', puntos)}
+            onPress={() => [
+              console.log('Guardado:', puntos),
+              finalizarPrueba(puntos)
+            ]}
           >
             Guardar Resultados
           </Button>

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { getAllPacientes, Paciente, savePaciente } from '../services/database';
+import { getAllPacientes, Paciente, savePacienteLocal } from '../services/database';
 import { SyncService } from '../services/syncService';
 
 export default function RegistroPacientes() {
@@ -24,7 +24,7 @@ export default function RegistroPacientes() {
     };
 
     try {
-      await savePaciente(nuevo); // Local SQLite
+      await savePacienteLocal(nuevo); // Local SQLite
       await SyncService.addPaciente(nuevo); // Nube Firebase
       Alert.alert("Éxito", "Paciente registrado en la nube");
       setNombre(''); setApellido('');

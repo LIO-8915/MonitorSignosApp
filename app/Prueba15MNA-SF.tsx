@@ -1,3 +1,4 @@
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Accelerometer, Gyroscope, Magnetometer } from 'expo-sensors';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -13,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SyncService } from '../services/syncService';
 
 interface Option {
   id: string;
@@ -85,6 +87,30 @@ const quizData: Question[] = [
 ];
 
 const QuizApp = () => {
+  const { pacienteId, nombrePaciente } = useLocalSearchParams();
+  const finalizarPrueba = async (puntaje: number,diagnostico: string) => {
+    console.log(puntaje);
+    if (!pacienteId) {
+      Alert.alert("Error", "No hay un paciente vinculado a esta sesión.");
+      return;
+    }
+
+    try {
+      // 3. Guardar en Firebase usando tu SyncService [cite: 2]
+      // Nota: Puedes agregar un método 'addResultadoPrueba' en tu syncService.ts similar a 'addPaciente'
+      const response = await SyncService.addResultadoPrueba(String(pacienteId), String(nombrePaciente), "Prueba 5 Formulario General", puntaje, String(diagnostico)); 
+      
+      if (response.success) {
+        // Alert.alert("Éxito", `Prueba guardada para el paciente: ${nombrePaciente}`);
+        //router.back(); // Regresar al menú tras finalizar
+      }
+    } catch (error) {
+      Alert.alert("Error", "No se pudo sincronizar con Firebase.");
+      console.log(error);
+    }
+  };
+  const router = useRouter();
+
   //Estado para controlar qué pantalla se ve
   const [pantallaActiva, setPantallaActiva] = useState('MNA');
   const drawer = useRef<DrawerLayoutAndroid>(null);
@@ -266,7 +292,8 @@ const QuizApp = () => {
     });
 
     let diagnostico = total >= 12 ? "Estado nutricional normal" : total >= 8 ? "Riesgo de malnutrición" : "Malnutrición";
-    Alert.alert("Resultado MNA", `Puntaje: ${total} pts.\n${diagnostico}`);
+    Alert.alert("Resultado MNA", `Puntaje: ${total} pts.\n${diagnostico}\n\nPrueba guardada para el paciente: ${nombrePaciente}`);
+    finalizarPrueba(total,diagnostico);
   };
 
   const isFinished = Object.keys(answers).length === quizData.length;

@@ -89,25 +89,26 @@ export default function FormularioScreen() {
   const [resultado, setResultado] = useState<number>(0);
 
   const finalizarPrueba = async (puntaje: number,diagnostico: string) => {
-      setResultado(puntaje);
-      console.log(resultado);
-      if (!pacienteId) {
+    setResultado(puntaje);
+    console.log(resultado);
+    if (!pacienteId) {
       Alert.alert("Error", "No hay un paciente vinculado a esta sesión.");
       return;
-      }
+    }
 
-      try {
+    try {
       // 3. Guardar en Firebase usando tu SyncService [cite: 2]
       // Nota: Puedes agregar un método 'addResultadoPrueba' en tu syncService.ts similar a 'addPaciente'
       const response = await SyncService.addResultadoPrueba(String(pacienteId), String(nombrePaciente), "Prueba 5 Formulario General", resultado, String(diagnostico)); 
       
       if (response.success) {
-          Alert.alert("Éxito", `Prueba guardada para el paciente: ${nombrePaciente}`);
-          router.replace('/PruebasMenu'); // Regresar al menú tras finalizar
+        Alert.alert("Éxito", `Prueba guardada para el paciente: ${nombrePaciente}`);
+        //router.back(); // Regresar al menú tras finalizar
       }
-      } catch (error) {
+    } catch (error) {
       Alert.alert("Error", "No se pudo sincronizar con Firebase.");
-      }
+      console.log(error);
+    }
   };
   const router = useRouter();
   const [respuestas, setRespuestas] = useState<Record<number, string>>({});

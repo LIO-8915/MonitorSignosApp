@@ -1,147 +1,176 @@
-// app/(tabs)/Graph.tsx
+import { Picker } from '@react-native-picker/picker';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Dimensions,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View
 } from 'react-native';
-import { BarChart, LineChart } from 'react-native-gifted-charts';
-// Importamos getSignosByPaciente que es el método correcto en tu database.ts
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getSignosByPaciente, SignosVitales } from '../services/database';
+import { LineChart } from 'react-native-gifted-charts';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { getAllPacientes, getSignosByPaciente, Paciente } from '../services/database';
+import { SyncService } from '../services/syncService';
 
-const screenWidth = Dimensions.get('window').width;
-
-export default function EvolucionSignosScreen() {
+export default function EvolucionDetalle() {
   const [loading, setLoading] = useState(true);
-  const [mediciones, setMediciones] = useState<SignosVitales[]>([]);
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [idSeleccionado, setIdSeleccionado] = useState<string>('');
   
-  // Datos para gráficas
-  const [spo2Data, setSpo2Data] = useState<any[]>([]);
-  const [temperaturaData, setTemperaturaData] = useState<any[]>([]);
-  const [bpmData, setBpmData] = useState<any[]>([]);
-  
-  // Estadísticas
-  const [ultimaMedicion, setUltimaMedicion] = useState<SignosVitales | null>(null);
+  const [pruebas, setPruebas] = useState<any[]>([]);
+  const [dataGraficaTemp, setDataGraficaTemp] = useState<any[]>([]);
+  const [dataGraficaBpm, setDataGraficaBpm] = useState<any[]>([]);
 
   useEffect(() => {
-    cargarDatos();
+    const inicializar = async () => {
+      try {
+        setLoading(true);
+        const lista = await getAllPacientes(); 
+        if (lista && lista.length > 0) {
+          setPacientes(lista);
+          setIdSeleccionado(lista[0].id.toString());
+        } else {
+          console.log("⚠️ No hay pacientes en SQLite, intentando SyncService...");
+          const listaFirebase = await SyncService.getPacientesParaMenu();
+          setPacientes(listaFirebase);
+          if (listaFirebase.length > 0) setIdSeleccionado(listaFirebase[0].id);
+        }
+      } catch (error) {
+        console.error("❌ Error cargando pacientes:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    inicializar();
   }, []);
 
-  const cargarDatos = async () => {
-    try {
-      setLoading(true);
-      
-      // 1. Intentamos obtener el ID del paciente actual (si lo guardaste al seleccionarlo)
-      // Si no hay uno seleccionado, podrías traer las del último registrado
-      const pacienteId = await AsyncStorage.getItem('@id_paciente_actual');
-      
-      if (!pacienteId) {
-        setLoading(false);
-        return;
-      }
+  useEffect(() => {
+    if (idSeleccionado) cargarHistorial(idSeleccionado);
+  }, [idSeleccionado]);
 
-      // 2. Traer datos de SQLite (Local) para velocidad
-      const data = await getSignosByPaciente(pacienteId);
-      setMediciones(data);
+  const cargarHistorial = async (id: string) => {
+    setLoading(true);
+    const resPruebas = await SyncService.obtenerResultadosPorPaciente(id);
+    setPruebas(resPruebas.reverse());
 
-      if (data.length > 0) {
-        // Ordenar y procesar para las gráficas de Gifted Charts
-        const formattedSpo2 = data.map(m => ({ value: m.spo2, label: m.fecha.split('/')[0] }));
-        const formattedTemp = data.map(m => ({ value: m.temperatura, label: m.fecha.split('/')[0] }));
-        const formattedBpm = data.map(m => ({ value: m.bpm, label: m.fecha.split('/')[0] }));
+    const resSignos = await getSignosByPaciente(id);
+    
+    // Formatear para temperatura
+    const tempFormateados = resSignos.map((s: any) => ({
+      value: parseFloat(s.temperatura),
+      label: new Date(s.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }),
+    }));
+    setDataGraficaTemp(tempFormateados);
 
-        setSpo2Data(formattedSpo2);
-        setTemperaturaData(formattedTemp);
-        setBpmData(formattedBpm);
-        setUltimaMedicion(data[data.length - 1]);
-      }
-    } catch (error) {
-      console.error("Error al cargar gráficas:", error);
-    } finally {
-      setLoading(false);
-    }
+    // Formatear para pulsaciones (bpm)
+    const bpmFormateados = resSignos.map((s: any) => ({
+      value: parseFloat(s.bpm),
+      label: new Date(s.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }),
+    }));
+    setDataGraficaBpm(bpmFormateados);
+
+    setLoading(false);
   };
-
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text>Cargando evolución...</Text>
-      </View>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>Evolución de Signos</Text>
+      <View style={styles.selectorCard}>
+        <Text style={styles.label}>Paciente a consultar:</Text>
+        <View style={styles.pickerWrapper}>
+          <Picker
+            selectedValue={idSeleccionado}
+            onValueChange={(val) => setIdSeleccionado(val)}
+          >
+            {pacientes.map(p => (
+              <Picker.Item key={p.id} label={p.nombre} value={p.id.toString()} />
+            ))}
+          </Picker>
+        </View>
+      </View>
 
-        {mediciones.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text>No hay mediciones registradas para este paciente.</Text>
-          </View>
+      <ScrollView contentContainerStyle={{ padding: 20 }}>
+        {/* Gráfica de Temperatura */}
+        <Text style={styles.sectionTitle}>Evolución de Temperatura (°C)</Text>
+        <View style={styles.chartContainer}>
+          {dataGraficaTemp.length > 0 ? (
+            <LineChart
+              data={dataGraficaTemp}
+              thickness={3}
+              color="#3498db"
+              dataPointsColor="#2980b9"
+              dataPointsRadius={4}
+              textColor1="#2C3E50"
+              textShiftY={-8}
+              hideDataPoints={false}
+              startFillColor="rgba(52,152,219,0.3)"
+              endFillColor="rgba(52,152,219,0.01)"
+              curved
+              isAnimated
+              yAxisTextStyle={{ fontSize: 10 }}
+              xAxisLabelTextStyle={{ fontSize: 10, marginTop: 5 }}
+            />
+          ) : (
+            <Text style={styles.noData}>Sin registros de temperatura</Text>
+          )}
+        </View>
+
+        {/* Gráfica de Pulsaciones */}
+        <Text style={styles.sectionTitle}>Evolución de Pulsaciones (bpm)</Text>
+        <View style={styles.chartContainer}>
+          {dataGraficaBpm.length > 0 ? (
+            <LineChart
+              data={dataGraficaBpm}
+              thickness={3}
+              color="#e67e22"
+              dataPointsColor="#d35400"
+              dataPointsRadius={4}
+              textColor1="#2C3E50"
+              textShiftY={-8}
+              hideDataPoints={false}
+              startFillColor="rgba(230,126,34,0.3)"
+              endFillColor="rgba(230,126,34,0.01)"
+              curved
+              isAnimated
+              yAxisTextStyle={{ fontSize: 10 }}
+              xAxisLabelTextStyle={{ fontSize: 10, marginTop: 5 }}
+            />
+          ) : (
+            <Text style={styles.noData}>Sin registros de pulsaciones</Text>
+          )}
+        </View>
+
+        {/* Pruebas Geriátricas */}
+        <Text style={styles.sectionTitle}>Pruebas Geriátricas Realizadas</Text>
+        {pruebas.length > 0 ? (
+          pruebas.map((p, i) => (
+            <View key={i} style={styles.pruebaItem}>
+              <View style={styles.pruebaHeader}>
+                <Text style={styles.pruebaNombre}>{p.tipoPrueba}</Text>
+                <Text style={styles.pruebaFecha}>{new Date(p.fecha).toLocaleDateString()}</Text>
+              </View>
+              <Text style={styles.pruebaScore}>Puntaje: {p.resultado}</Text>
+              {p.nota !== "" && <Text style={styles.pruebaNota}>{p.nota}</Text>}
+            </View>
+          ))
         ) : (
-          <>
-            {/* Resumen Superior */}
-            <View style={styles.statsGrid}>
-              <StatBox label="Último SpO2" value={`${ultimaMedicion?.spo2}%`} color="#2196F3" />
-              <StatBox label="Último BPM" value={`${ultimaMedicion?.bpm}`} color="#F44336" />
-              <StatBox label="Temperatura" value={`${ultimaMedicion?.temperatura}°C`} color="#4CAF50" />
-            </View>
-
-            {/* Gráfica de Oxigenación */}
-            <View style={styles.chartCard}>
-              <Text style={styles.chartTitle}>Saturación de Oxígeno (%)</Text>
-              <LineChart
-                data={spo2Data}
-                color="#2196F3"
-                thickness={3}
-                noOfSections={4}
-                areaChart
-                startFillColor="rgba(33, 150, 243, 0.3)"
-                endFillColor="rgba(33, 150, 243, 0.01)"
-              />
-            </View>
-
-            {/* Gráfica de Ritmo Cardíaco */}
-            <View style={styles.chartCard}>
-              <Text style={styles.chartTitle}>Frecuencia Cardíaca (BPM)</Text>
-              <BarChart
-                data={bpmData}
-                barWidth={22}
-                capColor={'#F44336'}
-                frontColor={'#F44336'}
-              />
-            </View>
-          </>
+          <Text style={styles.noData}>No hay pruebas geriátricas para este paciente.</Text>
         )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const StatBox = ({ label, value, color }: any) => (
-  <View style={[styles.statBox, { borderLeftColor: color, borderLeftWidth: 4 }]}>
-    <Text style={styles.statLabel}>{label}</Text>
-    <Text style={[styles.statValue, { color }]}>{value}</Text>
-  </View>
-);
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' },
-  scrollContent: { padding: 16 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, color: '#1A1A1A' },
-  emptyCard: { padding: 40, alignItems: 'center', backgroundColor: '#fff', borderRadius: 12 },
-  statsGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-  statBox: { backgroundColor: '#fff', padding: 12, borderRadius: 10, width: '31%', elevation: 2 },
-  statLabel: { fontSize: 10, color: '#666', textTransform: 'uppercase' },
-  statValue: { fontSize: 16, fontWeight: 'bold', marginTop: 4 },
-  chartCard: { backgroundColor: '#fff', padding: 16, borderRadius: 15, marginBottom: 20, elevation: 3 },
-  chartTitle: { fontSize: 16, fontWeight: '600', marginBottom: 15, color: '#444' }
+  container: { flex: 1, backgroundColor: '#F2F5F8' },
+  selectorCard: { backgroundColor: '#FFF', padding: 15, margin: 20, borderRadius: 12, elevation: 3 },
+  label: { fontSize: 12, fontWeight: 'bold', color: '#7F8C8D', marginBottom: 5 },
+  pickerWrapper: { backgroundColor: '#F8F9FA', borderRadius: 8, borderWidth: 1, borderColor: '#EBEDF0' },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A2A3A', marginBottom: 15, marginTop: 20 },
+  chartContainer: { backgroundColor: '#FFF', padding: 15, borderRadius: 16, alignItems: 'center', marginBottom: 10 },
+  pruebaItem: { backgroundColor: '#FFF', padding: 15, borderRadius: 12, marginBottom: 10, borderLeftWidth: 5, borderLeftColor: '#3498db' },
+  pruebaHeader: { flexDirection: 'row', justifyContent: 'space-between' },
+  pruebaNombre: { fontWeight: 'bold', color: '#2C3E50' },
+  pruebaFecha: { fontSize: 12, color: '#95A5A6' },
+  pruebaScore: { fontSize: 22, fontWeight: '800', color: '#2ECC71', marginVertical: 5 },
+  pruebaNota: { fontSize: 13, color: '#7F8C8D', fontStyle: 'italic' },
+  noData: { textAlign: 'center', color: '#BDC3C7', padding: 20 }
 });

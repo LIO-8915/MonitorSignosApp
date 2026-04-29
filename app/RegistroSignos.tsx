@@ -1,89 +1,121 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getAllPacientes, Paciente, registrarEnBitacora, saveMedicionVital } from '../services/database';
+import { getAllPacientes, saveMedicionVital, SignosVitales } from '../services/database';
+import { SyncService } from '../services/syncService';
 
 export default function RegistroSignos() {
-  const [pacientes, setPacientes] = useState<Paciente[]>([]);
-  const [pacienteSeleccionado, setPacienteSeleccionado] = useState('');
-  
+  const [pacientes, setPacientes] = useState<any[]>([]);
+  const [pacienteSeleccionado, setPacienteSeleccionado] = useState<string>('');
   const [bpm, setBpm] = useState('');
   const [temp, setTemp] = useState('');
   const [spo2, setSpo2] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  // 1. Cargar la lista de pacientes desde SQLite al abrir la pantalla
   useEffect(() => {
-    const cargarPacientes = async () => {
-      const data = await getAllPacientes();
-      setPacientes(data);
-      
-      // Intentar recuperar el último paciente seleccionado si existe
-      const guardado = await AsyncStorage.getItem('@id_paciente_actual');
-      if (guardado) setPacienteSeleccionado(guardado);
+    const inicializarDatos = async () => {
+      try {
+        setLoading(true);
+        
+        // 1. Intentar cargar pacientes de la sincronización de Firebase (SyncService)
+        let lista = await SyncService.getPacientesParaMenu();
+        
+        // 2. Si no hay pacientes en el espejo de Firebase, intentar cargar de SQLite
+        if (lista.length === 0) {
+          console.log("No hay pacientes en SyncService, buscando en SQLite...");
+          lista = await getAllPacientes();
+        }
+
+        setPacientes(lista);
+
+        // 3. Recuperar el último seleccionado o seleccionar el primero por defecto
+        const guardado = await AsyncStorage.getItem('@id_paciente_actual');
+        if (guardado && lista.some((p: any) => (p.id || p.pacienteId) === guardado)) {
+          setPacienteSeleccionado(guardado);
+        } else if (lista.length > 0) {
+          const primerId = lista[0].id || lista[0].pacienteId;
+          setPacienteSeleccionado(primerId.toString());
+        }
+      } catch (error) {
+        console.error("Error al inicializar lista de pacientes:", error);
+      } finally {
+        setLoading(false);
+      }
     };
-    cargarPacientes();
+
+    inicializarDatos();
   }, []);
 
   const guardarSignos = async () => {
-    // Validación de selección
-    if (!pacienteSeleccionado) {
-      return Alert.alert("Error", "Debes seleccionar un paciente primero");
+    if (!pacienteSeleccionado || !bpm || !temp || !spo2) {
+      return Alert.alert("Error", "Por favor completa todos los campos y selecciona un paciente.");
     }
-
-    if (!bpm || !temp || !spo2) {
-      return Alert.alert("Error", "Por favor completa todos los signos vitales");
-    }
-
-    const nuevaMedicion = {
-      pacienteId: pacienteSeleccionado,
-      fecha: new Date().toLocaleDateString(),
-      bpm: parseInt(bpm),
-      temperatura: parseFloat(temp),
-      spo2: parseInt(spo2)
-    };
 
     try {
-      // 1. Guardar localmente para futuras pantallas (gráficas)
-      await saveMedicionVital(nuevaMedicion);
+      // Creamos el objeto siguiendo la interfaz de database.ts
+      const nuevaMedicion: SignosVitales = {
+        pacienteId: pacienteSeleccionado,
+        fecha: new Date().toISOString(),
+        bpm: parseFloat(bpm),
+        temperatura: parseFloat(temp),
+        spo2: parseFloat(spo2)
+      };
+
+      const resultado = await saveMedicionVital(nuevaMedicion);
       
-      // 2. Vincular y persistir el ID del paciente para la "pantalla que aún no haces"
-      await AsyncStorage.setItem('@id_paciente_actual', pacienteSeleccionado);
-
-      // 3. Bitácora
-      const usuario = await AsyncStorage.getItem('@ultimo_usuario') || 'Médico';
-      await registrarEnBitacora({
-        fecha: nuevaMedicion.fecha,
-        hora: new Date().toLocaleTimeString(),
-        usuario,
-        movimiento: 'PRUEBA_MEDICA'
-      });
-
-      Alert.alert("Éxito", `Signos vinculados a ${pacienteSeleccionado}`);
-      setBpm(''); setTemp(''); setSpo2('');
+      if (resultado.success) {
+        Alert.alert("Éxito", "Signos vitales guardados localmente.");
+        // Limpiar campos después de guardar
+        setBpm(''); setTemp(''); setSpo2('');
+      } else {
+        Alert.alert("Error", "No se pudo guardar en la base de datos.");
+      }
     } catch (error) {
-      Alert.alert("Error", "No se pudo guardar la medición");
+      Alert.alert("Error", "Hubo un fallo al procesar los datos.");
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: 20 }}>
-        <Text style={styles.title}>Registro de Signos Vitales</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>Vincular Signos Vitales</Text>
 
-        {/* Picker para seleccionar y vincular paciente */}
-        <Text style={styles.label}>Seleccionar Paciente</Text>
-        <View style={styles.pickerWrapper}>
-          <Picker
-            selectedValue={pacienteSeleccionado}
-            onValueChange={(itemValue) => setPacienteSeleccionado(itemValue)}
-          >
-            <Picker.Item label="-- Seleccione un paciente --" value="" />
-            {pacientes.map((p) => (
-              <Picker.Item key={p.id} label={`${p.nombre} ${p.apellido}`} value={p.id} />
-            ))}
-          </Picker>
+        <View style={styles.selectorContainer}>
+          <Text style={styles.label}>Seleccionar Paciente (Firebase/Local):</Text>
+          <View style={styles.pickerWrapper}>
+            {loading ? (
+              <ActivityIndicator size="small" color="#3498db" />
+            ) : (
+              <Picker
+                selectedValue={pacienteSeleccionado}
+                onValueChange={(itemValue) => {
+                  setPacienteSeleccionado(itemValue);
+                  AsyncStorage.setItem('@id_paciente_actual', itemValue);
+                }}
+                mode="dropdown"
+              >
+                <Picker.Item label="-- Seleccione un paciente --" value="" color="#999" />
+                {pacientes.map((p) => (
+                  <Picker.Item 
+                    key={p.id ? p.id.toString() : p.pacienteId.toString()} 
+                    label={`${p.nombre} ${p.apellido || ''}`} 
+                    value={p.id ? p.id.toString() : p.pacienteId.toString()} 
+                  />
+                ))}
+              </Picker>
+            )}
+          </View>
         </View>
 
         <Text style={styles.label}>Frecuencia Cardíaca (BPM)</Text>
@@ -114,7 +146,7 @@ export default function RegistroSignos() {
         />
 
         <TouchableOpacity style={styles.btn} onPress={guardarSignos}>
-          <Text style={styles.btnText}>Vincular y Guardar</Text>
+          <Text style={styles.btnText}>Guardar Registro</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -122,32 +154,13 @@ export default function RegistroSignos() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, color: '#1C1C1E', textAlign: 'center' },
-  label: { fontSize: 14, fontWeight: '600', color: '#666', marginBottom: 5 },
-  input: { 
-    backgroundColor: '#FFF', 
-    borderWidth: 1, 
-    borderColor: '#DDD', 
-    borderRadius: 10, 
-    padding: 15, 
-    marginBottom: 20, 
-    fontSize: 16 
-  },
-  pickerWrapper: { 
-    backgroundColor: '#FFF', 
-    borderWidth: 1, 
-    borderColor: '#DDD', 
-    borderRadius: 10, 
-    marginBottom: 25, 
-    overflow: 'hidden' 
-  },
-  btn: { 
-    backgroundColor: '#007AFF', 
-    padding: 18, 
-    borderRadius: 12, 
-    alignItems: 'center',
-    marginTop: 10
-  },
-  btnText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
+  container: { flex: 1, backgroundColor: '#F2F5F8' },
+  scrollContent: { padding: 20 },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#1A2A3A', marginBottom: 20, textAlign: 'center' },
+  selectorContainer: { backgroundColor: '#FFF', borderRadius: 12, padding: 10, marginBottom: 20, elevation: 3 },
+  label: { fontSize: 14, fontWeight: '600', color: '#666', marginBottom: 8 },
+  pickerWrapper: { height: 50, justifyContent: 'center', backgroundColor: '#F8F9FA', borderRadius: 8 },
+  input: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#DDD', borderRadius: 10, padding: 15, marginBottom: 15, fontSize: 16 },
+  btn: { backgroundColor: '#3498db', padding: 18, borderRadius: 12, alignItems: 'center', marginTop: 10 },
+  btnText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 }
 });

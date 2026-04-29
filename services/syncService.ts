@@ -165,38 +165,50 @@ export const SyncService = {
     return locales ? JSON.parse(locales) : [];
   },
   addResultadoPrueba: async (
-  pacienteId: string, 
-  nombrePaciente: string, 
-  tipoPrueba: string, 
-  resultado: number, 
-  nota: string = "" // Cadena vacía por defecto si no se envía
-) => {
-  try {
-    const resultadosRef = ref(db, 'resultados_pruebas');
-    const nuevoResultadoRef = push(resultadosRef);
+    pacienteId: string, 
+    nombrePaciente: string, 
+    tipoPrueba: string, 
+    resultado: number, 
+    nota: string = "" // Cadena vacía por defecto si no se envía
+  ) => {
+    try {
+      const resultadosRef = ref(db, 'resultados_pruebas');
+      const nuevoResultadoRef = push(resultadosRef);
 
-    const datosFinales = {
-      pacienteId,
-      nombrePaciente,
-      tipoPrueba,
-      resultado,
-      nota,
-      fecha: new Date().toISOString(),
-    };
+      const datosFinales = {
+        pacienteId,
+        nombrePaciente,
+        tipoPrueba,
+        resultado,
+        nota,
+        fecha: new Date().toISOString(),
+      };
 
-    // Guardar en Firebase
-    await set(nuevoResultadoRef, datosFinales);
+      // Guardar en Firebase
+      await set(nuevoResultadoRef, datosFinales);
 
-    // Guardar en Local
-    const locales = await AsyncStorage.getItem('@resultados_local');
-    const lista = locales ? JSON.parse(locales) : [];
-    lista.push({ ...datosFinales, id: nuevoResultadoRef.key });
-    await AsyncStorage.setItem('@resultados_local', JSON.stringify(lista));
+      // Guardar en Local
+      const locales = await AsyncStorage.getItem('@resultados_local');
+      const lista = locales ? JSON.parse(locales) : [];
+      lista.push({ ...datosFinales, id: nuevoResultadoRef.key });
+      await AsyncStorage.setItem('@resultados_local', JSON.stringify(lista));
 
-    return { success: true };
-  } catch (error) {
-    console.error("❌ Error al guardar prueba:", error);
-    return { success: false };
-  }
-},
+      return { success: true };
+    } catch (error) {
+      console.error("❌ Error al guardar prueba:", error);
+      return { success: false };
+    }
+  },
+  obtenerResultadosPorPaciente: async (pacienteId: string) => {
+    try {
+      const locales = await AsyncStorage.getItem('@resultados_local');
+      if (!locales) return [];
+      const todos: any[] = JSON.parse(locales);
+      // Filtramos por el ID del paciente
+      return todos.filter(item => item.pacienteId === pacienteId);
+    } catch (error) {
+      console.error("Error al obtener resultados locales:", error);
+      return [];
+    }
+  },
 };

@@ -112,7 +112,7 @@ export default function KatzIndex({ navigation }: any) {
       const response = await SyncService.addResultadoPrueba(String(pacienteId), String(nombrePaciente), "Prueba 7 Indice de Katz", resultado, String(diagnostico)); 
       
       if (response.success) {         
-          router.replace('/PruebasMenu'); // Regresar al menú tras finalizar
+          //router.back(); // Regresar al menú tras finalizar
       }
       } catch (error) {
       Alert.alert("Error", "No se pudo sincronizar con Firebase.");

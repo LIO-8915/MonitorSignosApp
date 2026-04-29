@@ -1,3 +1,4 @@
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Accelerometer } from 'expo-sensors';
 import React, { useEffect, useState } from 'react';
 import {
@@ -9,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SyncService } from '../services/syncService';
 
 // Interfaz para evitar el error de tipo 'any'
 interface AccelerometerData {
@@ -42,6 +44,30 @@ interface Criteria {
 }
 
 export default function NortonScale() {
+  const { pacienteId, nombrePaciente } = useLocalSearchParams();
+  const finalizarPrueba = async (puntaje: number,diagnostico: string) => {    
+    console.log(puntaje);
+    if (!pacienteId) {
+      Alert.alert("Error", "No hay un paciente vinculado a esta sesión.");
+      return;
+    }
+
+    try {
+      // 3. Guardar en Firebase usando tu SyncService [cite: 2]
+      // Nota: Puedes agregar un método 'addResultadoPrueba' en tu syncService.ts similar a 'addPaciente'
+      const response = await SyncService.addResultadoPrueba(String(pacienteId), String(nombrePaciente), "Prueba 12 Escala de Norton", puntaje, String(diagnostico)); 
+      
+      if (response.success) {
+        Alert.alert("Éxito", `Prueba guardada para el paciente: ${nombrePaciente}`);
+        //router.back(); // Regresar al menú tras finalizar
+      }
+    } catch (error) {
+      Alert.alert("Error", "No se pudo sincronizar con Firebase.");
+      console.log(error);
+    }
+  };
+  const router = useRouter();
+
   const [scores, setScores] = useState<Scores>({
     estadoFisico: null,
     estadoMental: null,

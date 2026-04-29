@@ -1,7 +1,7 @@
 import { FormField } from '@/components/ui/formField';
 import { FormSection } from '@/components/ui/formSection';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { Accelerometer } from 'expo-sensors';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
@@ -46,7 +46,7 @@ export default function TabTwoScreen() {
       
       if (response.success) {
           Alert.alert("Éxito", `Prueba guardada para el paciente: ${nombrePaciente}`);
-          router.replace('/PruebasMenu'); // Regresar al menú tras finalizar
+          //router.back(); // Regresar al menú tras finalizar
       }
       } catch (error) {
       Alert.alert("Error", "No se pudo sincronizar con Firebase.");

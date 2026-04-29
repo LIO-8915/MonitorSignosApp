@@ -1,11 +1,35 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Accelerometer } from 'expo-sensors';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Button, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import SwitchPrueba from '../components/ui/SwitchPrueba';
+import { SyncService } from '../services/syncService';
 
 export default function Formulario() {
+    const { pacienteId, nombrePaciente } = useLocalSearchParams();
+    const finalizarPrueba = async (puntaje: number,diagnostico: string) => {    
+        console.log(puntaje);
+        if (!pacienteId) {
+            Alert.alert("Error", "No hay un paciente vinculado a esta sesión.");
+            return;
+        }
+
+        try {
+            // 3. Guardar en Firebase usando tu SyncService [cite: 2]
+            // Nota: Puedes agregar un método 'addResultadoPrueba' en tu syncService.ts similar a 'addPaciente'
+            const response = await SyncService.addResultadoPrueba(String(pacienteId), String(nombrePaciente), "Prueba 20 Valoracion Entorno", puntaje, String(diagnostico)); 
+            
+            if (response.success) {
+            Alert.alert("Éxito", `Prueba guardada para el paciente: ${nombrePaciente}`);
+            //router.back(); // Regresar al menú tras finalizar
+            }
+        } catch (error) {
+            Alert.alert("Error", "No se pudo sincronizar con Firebase.");
+            console.log(error);
+        }
+    };
+
     const router = useRouter();
     const [respuestas, setRespuestas] = useState(Array(50).fill(false));
     const [nombre, setNombre] = useState('');
@@ -38,7 +62,7 @@ export default function Formulario() {
                 const nivelado = y < 0.45; // boca arriba
                 if (nivelado) {
                     submittedRef.current = true; // Evita múltiples envíos
-                    handleSubmit(); // Ejecuta el envío
+                    // handleSubmit(); // Ejecuta el envío
                 }
             }
         });
@@ -86,13 +110,14 @@ export default function Formulario() {
         setShowDatePicker(true);
     };
 
-    const handleSubmit = () => {
-        Alert.alert(
-            "Evaluación Terminada",
-            cantidades,
-            [{ text: "OK", onPress: () => router.push('/PruebasMenu') }]
-        );
-    };
+    // const handleSubmit = () => {
+    //     // Alert.alert(
+    //     //     "Evaluación Terminada",
+    //     //     cantidades,
+    //     //     [{ text: "OK", onPress: () => router.push('/PruebasMenu') }]
+    //     // );
+    //     // finalizarPrueba(0,String(cantidades));
+    // };
 
     return (
         <ScrollView
@@ -242,7 +267,7 @@ export default function Formulario() {
             </View>
 
             <View style={styles.buttonContainer}>
-                <Button title="Enviar Formulario" onPress={handleSubmit} />
+                <Button title="Enviar Formulario" onPress={() => finalizarPrueba(0,String(cantidades))} />
             </View>
             <View style={{ height: 40 }} />
         </ScrollView>

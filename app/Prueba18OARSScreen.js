@@ -1,4 +1,5 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Accelerometer } from "expo-sensors";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -11,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SyncService } from '../services/syncService';
 
 const Checkbox = ({ label, selected, onPress }) => (
   <TouchableOpacity
@@ -35,6 +37,30 @@ export default function OARSScreen({
   setPacienteActual,
   setScreen,
 }) {
+  const { pacienteId, nombrePaciente } = useLocalSearchParams();
+  const finalizarPruebas = async (puntaje,diagnostico) => {
+      console.log(puntaje);
+      if (!pacienteId) {
+        Alert.alert("Error", "No hay un paciente vinculado a esta sesión.");
+        return;
+      }
+  
+      try {
+        // 3. Guardar en Firebase usando tu SyncService [cite: 2]
+        // Nota: Puedes agregar un método 'addResultadoPrueba' en tu syncService.ts similar a 'addPaciente'
+        const response = await SyncService.addResultadoPrueba(String(pacienteId), String(nombrePaciente), "Prueba 18 OARSS Screen", puntaje, String(diagnostico)); 
+        
+        if (response.success) {
+          Alert.alert("Éxito", `Prueba guardada para el paciente: ${nombrePaciente}`);
+          //router.back(); // Regresar al menú tras finalizar
+        }
+      } catch (error) {
+        Alert.alert("Error", "No se pudo sincronizar con Firebase.");
+        console.log(error);
+      }
+    };
+    const router = useRouter();
+
   const initialState = {
     nombre: "",
     edad: "",
@@ -120,25 +146,27 @@ export default function OARSScreen({
       return;
     }
 
-    const nuevaPrueba = {
-      tipo: "OARS",
-      fecha: new Date().toLocaleDateString(),
-      detalle: {
-        respuestas: form,
-      },
-    };
+    // const nuevaPrueba = {
+    //   tipo: "OARS",
+    //   fecha: new Date().toLocaleDateString(),
+    //   detalle: {
+    //     respuestas: form,
+    //   },
+    // };
 
-    setPacienteActual((prev) => ({
-      ...prev,
-      pruebas: [...(prev?.pruebas || []), nuevaPrueba],
-    }));
+    // setPacienteActual((prev) => ({
+    //   ...prev,
+    //   pruebas: [...(prev?.pruebas || []), nuevaPrueba],
+    // }));
 
-    Alert.alert(
-      "Prueba Guardada",
-      "El formulario OARS fue guardado correctamente."
-    );
+    // Alert.alert(
+    //   "Prueba Guardada",
+    //   "El formulario OARS fue guardado correctamente."
+    // );
 
-    setScreen("Agendar Cita");
+    finalizarPruebas(0,String(form));
+
+    // setScreen("Agendar Cita");
   };
 
   return (
